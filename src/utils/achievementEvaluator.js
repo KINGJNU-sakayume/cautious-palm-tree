@@ -55,6 +55,23 @@ export function evaluateCondition(condition, records, newRecord) {
       return false
     }
 
+    /**
+     * tag_match: at least one record in this category contains the specified tag.
+     * condition shape: { type: 'tag_match', tag: string }
+     */
+    case 'tag_match': {
+      return categoryRecords.some(r => (r.tags || []).includes(condition.tag))
+    }
+
+    /**
+     * tag_count: number of records in this category that contain the specified tag >= target.
+     * condition shape: { type: 'tag_count', tag: string, target: number }
+     */
+    case 'tag_count': {
+      const matching = categoryRecords.filter(r => (r.tags || []).includes(condition.tag))
+      return matching.length >= condition.target
+    }
+
     default:
       return false
   }
@@ -162,6 +179,10 @@ export function computeProgress(achievement, allRecords) {
     }
     case 'action':
       return categoryRecords.length >= 1 ? 1 : 0
+    case 'tag_match':
+      return categoryRecords.some(r => (r.tags || []).includes(condition.tag)) ? 1 : 0
+    case 'tag_count':
+      return categoryRecords.filter(r => (r.tags || []).includes(condition.tag)).length
     default:
       return 0
   }
