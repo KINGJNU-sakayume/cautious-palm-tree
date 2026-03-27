@@ -9,6 +9,7 @@ export const records = [
     unit: 'km',
     memo: 'Morning run in the park. Felt great.',
     photoUrl: null,
+    tags: ['morning', 'outdoor'],
     unlockedAchievementIds: [],
   },
   {
@@ -19,6 +20,7 @@ export const records = [
     unit: 'km',
     memo: 'Easy recovery run.',
     photoUrl: null,
+    tags: ['easy', 'outdoor'],
     unlockedAchievementIds: [],
   },
   {
@@ -29,6 +31,7 @@ export const records = [
     unit: 'km',
     memo: 'Long run Sunday. New monthly best!',
     photoUrl: null,
+    tags: ['long-run', 'outdoor', 'PR'],
     unlockedAchievementIds: [],
   },
   {
@@ -39,6 +42,7 @@ export const records = [
     unit: 'km',
     memo: null,
     photoUrl: null,
+    tags: ['outdoor'],
     unlockedAchievementIds: ['ach-cycling-001'],
   },
   {
@@ -49,6 +53,7 @@ export const records = [
     unit: 'km',
     memo: 'Foggy morning. Loved it.',
     photoUrl: null,
+    tags: ['morning', 'outdoor'],
     unlockedAchievementIds: [],
   },
   {
@@ -59,6 +64,7 @@ export const records = [
     unit: 'km',
     memo: "Valentine's day run. Solo achievement.",
     photoUrl: null,
+    tags: ['long-run', 'outdoor'],
     unlockedAchievementIds: ['ach-run-005'],
   },
   {
@@ -69,6 +75,7 @@ export const records = [
     unit: 'km',
     memo: null,
     photoUrl: null,
+    tags: ['outdoor'],
     unlockedAchievementIds: ['ach-run-003'],
   },
 
@@ -81,6 +88,7 @@ export const records = [
     unit: 'kg',
     memo: 'Finally hit the century mark!',
     photoUrl: null,
+    tags: ['PR', 'heavy'],
     unlockedAchievementIds: ['ach-bench-002'],
   },
   {
@@ -91,6 +99,7 @@ export const records = [
     unit: 'kg',
     memo: 'So close to 100.',
     photoUrl: null,
+    tags: ['heavy'],
     unlockedAchievementIds: [],
   },
   {
@@ -101,6 +110,7 @@ export const records = [
     unit: 'kg',
     memo: null,
     photoUrl: null,
+    tags: ['heavy'],
     unlockedAchievementIds: [],
   },
   {
@@ -111,6 +121,7 @@ export const records = [
     unit: 'kg',
     memo: 'Solid session.',
     photoUrl: null,
+    tags: ['warmup'],
     unlockedAchievementIds: [],
   },
 
@@ -123,6 +134,7 @@ export const records = [
     unit: 'kg',
     memo: 'Depth was good today.',
     photoUrl: null,
+    tags: ['heavy', 'PR'],
     unlockedAchievementIds: [],
   },
   {
@@ -133,6 +145,7 @@ export const records = [
     unit: 'kg',
     memo: null,
     photoUrl: null,
+    tags: ['heavy'],
     unlockedAchievementIds: [],
   },
 
@@ -145,6 +158,7 @@ export const records = [
     unit: 'min',
     memo: 'Morning session before work.',
     photoUrl: null,
+    tags: ['morning', 'guided'],
     unlockedAchievementIds: [],
   },
   {
@@ -155,6 +169,7 @@ export const records = [
     unit: 'min',
     memo: null,
     photoUrl: null,
+    tags: ['morning'],
     unlockedAchievementIds: [],
   },
   {
@@ -165,6 +180,7 @@ export const records = [
     unit: 'min',
     memo: 'Extended session. Very calm.',
     photoUrl: null,
+    tags: ['deep', 'morning'],
     unlockedAchievementIds: ['ach-med-002'],
   },
 
@@ -177,6 +193,7 @@ export const records = [
     unit: 'pages',
     memo: 'Started "The Name of the Wind".',
     photoUrl: null,
+    tags: ['fiction', 'fantasy'],
     unlockedAchievementIds: [],
   },
   {
@@ -187,6 +204,7 @@ export const records = [
     unit: 'pages',
     memo: null,
     photoUrl: null,
+    tags: ['non-fiction'],
     unlockedAchievementIds: [],
   },
   {
@@ -197,6 +215,7 @@ export const records = [
     unit: 'pages',
     memo: null,
     photoUrl: null,
+    tags: ['non-fiction'],
     unlockedAchievementIds: ['ach-books-002'],
   },
 
@@ -209,6 +228,7 @@ export const records = [
     unit: 'min',
     memo: 'Anki reviews + grammar.',
     photoUrl: null,
+    tags: ['anki', 'grammar'],
     unlockedAchievementIds: [],
   },
   {
@@ -219,6 +239,7 @@ export const records = [
     unit: 'min',
     memo: null,
     photoUrl: null,
+    tags: ['anki'],
     unlockedAchievementIds: [],
   },
 
@@ -231,6 +252,7 @@ export const records = [
     unit: null,
     memo: 'Weekly review — good progress on goals.',
     photoUrl: null,
+    tags: ['weekly-review', 'reflection'],
     unlockedAchievementIds: [],
   },
   {
@@ -241,6 +263,7 @@ export const records = [
     unit: null,
     memo: null,
     photoUrl: null,
+    tags: ['reflection'],
     unlockedAchievementIds: [],
   },
 
@@ -253,6 +276,7 @@ export const records = [
     unit: 'km',
     memo: 'First ride of the season!',
     photoUrl: null,
+    tags: ['outdoor', 'road'],
     unlockedAchievementIds: ['ach-cycling-001'],
   },
 
@@ -265,6 +289,7 @@ export const records = [
     unit: null,
     memo: 'Trip to Tokyo — incredible experience.',
     photoUrl: null,
+    tags: ['asia', 'solo'],
     unlockedAchievementIds: ['ach-travel-001'],
   },
 ]
