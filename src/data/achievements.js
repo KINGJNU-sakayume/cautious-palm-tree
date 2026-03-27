@@ -106,6 +106,21 @@ export const achievements = [
     earnedAt: null,
     progress: 67,
   },
+  // Tag-based: log 5 outdoor runs
+  {
+    id: 'ach-run-008',
+    title: 'Trail Blazer',
+    description: 'Log 5 outdoor running sessions.',
+    categoryId: 'cat-running',
+    tier: 'silver',
+    type: 'one-time',
+    condition: { type: 'tag_count', tag: 'outdoor', target: 5 },
+    rarity: 30.1,
+    isHidden: false,
+    isEarned: false,
+    earnedAt: null,
+    progress: 0,
+  },
 
   // ── BENCH PRESS ──────────────────────────────────────────────────────
   {
@@ -163,6 +178,21 @@ export const achievements = [
     isEarned: false,
     earnedAt: null,
     progress: 12,
+  },
+  // Tag-based: log a bench press session tagged as a PR
+  {
+    id: 'ach-bench-005',
+    title: 'New Record',
+    description: 'Log a bench press session tagged as a personal record.',
+    categoryId: 'cat-bench-press',
+    tier: 'silver',
+    type: 'repeatable',
+    condition: { type: 'tag_match', tag: 'PR' },
+    rarity: 35.0,
+    isHidden: false,
+    isEarned: true,
+    earnedAt: '2026-03-25',
+    progress: 1,
   },
 
   // ── SQUAT ─────────────────────────────────────────────────────────────
@@ -224,19 +254,20 @@ export const achievements = [
     earnedAt: '2026-01-10',
     progress: 1000,
   },
+  // Modified: was generic cumulative, now requires reading non-fiction books 3 times
   {
     id: 'ach-books-003',
-    title: 'Library Card',
-    description: 'Read 10,000 pages total.',
+    title: 'Non-Fiction Devotee',
+    description: 'Log 3 reading sessions tagged as non-fiction.',
     categoryId: 'cat-books',
     tier: 'gold',
     type: 'one-time',
-    condition: { type: 'cumulative', target: 10000, unit: 'pages' },
+    condition: { type: 'tag_count', tag: 'non-fiction', target: 3 },
     rarity: 6.2,
     isHidden: false,
     isEarned: false,
     earnedAt: null,
-    progress: 3240,
+    progress: 2,
   },
 
   // ── JAPANESE ─────────────────────────────────────────────────────────
@@ -326,6 +357,21 @@ export const achievements = [
     earnedAt: null,
     progress: 0,
   },
+  // Tag-based: log a deep meditation session
+  {
+    id: 'ach-med-004',
+    title: 'Deep Dive',
+    description: 'Log a meditation session tagged as deep focus.',
+    categoryId: 'cat-meditation',
+    tier: 'silver',
+    type: 'repeatable',
+    condition: { type: 'tag_match', tag: 'deep' },
+    rarity: 25.0,
+    isHidden: false,
+    isEarned: true,
+    earnedAt: '2026-03-20',
+    progress: 1,
+  },
 
   // ── JOURNALING ────────────────────────────────────────────────────────
   {
@@ -342,19 +388,20 @@ export const achievements = [
     earnedAt: '2025-10-21',
     progress: 1,
   },
+  // Modified: was generic count-30, now requires 10 reflection-tagged entries
   {
     id: 'ach-journal-002',
     title: 'Weekly Reflector',
-    description: 'Log 30 journal entries.',
+    description: 'Log 10 journal entries tagged as reflections.',
     categoryId: 'cat-journaling',
     tier: 'silver',
     type: 'one-time',
-    condition: { type: 'count', target: 30 },
+    condition: { type: 'tag_count', tag: 'reflection', target: 10 },
     rarity: 24.1,
     isHidden: false,
     isEarned: false,
     earnedAt: null,
-    progress: 18,
+    progress: 2,
   },
 
   // ── TRAVEL ────────────────────────────────────────────────────────────
@@ -525,83 +572,4 @@ export const achievements = [
     earnedAt: null,
     progress: 0,
   },
-  // Running
-  { id: 'ach-run-008', title: '500K Milestone', description: 'Accumulate 500 km of running.', categoryId: 'cat-running', tier: 'diamond', type: 'one-time', condition: { type: 'cumulative', target: 500, unit: 'km' }, rarity: 1.2, isHidden: false, isEarned: false, earnedAt: null, progress: 100 },
-  { id: 'ach-run-009', title: 'Century Runner', description: 'Log 100 running sessions.', categoryId: 'cat-running', tier: 'platinum', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 3.5, isHidden: false, isEarned: false, earnedAt: null, progress: 10 },
-  // Bench Press
-  { id: 'ach-bench-005', title: 'Double Century', description: 'Log 200 bench press sessions.', categoryId: 'cat-bench-press', tier: 'diamond', type: 'one-time', condition: { type: 'count', target: 200 }, rarity: 1.5, isHidden: false, isEarned: false, earnedAt: null, progress: 12 },
-  { id: 'ach-bench-006', title: 'Bodyweight Warrior', description: 'Bench press 75 kg.', categoryId: 'cat-bench-press', tier: 'silver', type: 'one-time', condition: { type: 'single', target: 75, unit: 'kg' }, rarity: 30.5, isHidden: false, isEarned: true, earnedAt: '2025-10-01', progress: 75 },
-  // Squat
-  { id: 'ach-squat-003', title: 'Squat Master', description: 'Log 50 squat sessions.', categoryId: 'cat-squat', tier: 'silver', type: 'one-time', condition: { type: 'count', target: 50 }, rarity: 25.0, isHidden: false, isEarned: false, earnedAt: null, progress: 2 },
-  { id: 'ach-squat-004', title: 'The 200 Club', description: 'Squat 200 kg in a single session.', categoryId: 'cat-squat', tier: 'red_diamond', type: 'one-time', condition: { type: 'single', target: 200, unit: 'kg' }, rarity: 0.5, isHidden: true, isEarned: false, earnedAt: null, progress: 120 },
-  // Deadlift (새로 데이터만 있던 곳)
-  { id: 'ach-deadlift-001', title: 'First Pull', description: 'Log your first deadlift.', categoryId: 'cat-deadlift', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 50.1, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-deadlift-002', title: 'Heavy Lifter', description: 'Deadlift 150 kg.', categoryId: 'cat-deadlift', tier: 'gold', type: 'one-time', condition: { type: 'single', target: 150, unit: 'kg' }, rarity: 9.8, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Cycling
-  { id: 'ach-cycling-003', title: 'Tour de Local', description: 'Accumulate 500 km cycling.', categoryId: 'cat-cycling', tier: 'gold', type: 'one-time', condition: { type: 'cumulative', target: 500, unit: 'km' }, rarity: 10.2, isHidden: false, isEarned: false, earnedAt: null, progress: 32 },
-  { id: 'ach-cycling-004', title: 'Daily Commuter', description: 'Log 30 cycling sessions.', categoryId: 'cat-cycling', tier: 'silver', type: 'one-time', condition: { type: 'count', target: 30 }, rarity: 18.5, isHidden: false, isEarned: false, earnedAt: null, progress: 1 },
-  // Books
-  { id: 'ach-books-004', title: 'Speed Reader', description: 'Read 100 pages in one session.', categoryId: 'cat-books', tier: 'silver', type: 'one-time', condition: { type: 'single', target: 100, unit: 'pages' }, rarity: 22.0, isHidden: false, isEarned: true, earnedAt: '2026-01-10', progress: 120 },
-  { id: 'ach-books-005', title: 'The Great Library', description: 'Log 50 reading sessions.', categoryId: 'cat-books', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 50 }, rarity: 15.0, isHidden: false, isEarned: false, earnedAt: null, progress: 3 },
-  // Courses
-  { id: 'ach-courses-001', title: 'First Lecture', description: 'Log your first course session.', categoryId: 'cat-courses', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 60.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-courses-002', title: 'Lifelong Learner', description: 'Log 20 course sessions.', categoryId: 'cat-courses', tier: 'silver', type: 'one-time', condition: { type: 'count', target: 20 }, rarity: 28.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Japanese
-  { id: 'ach-jp-004', title: '100-Day Sensei', description: 'Study Japanese on 100 consecutive days.', categoryId: 'cat-japanese', tier: 'diamond', type: 'one-time', condition: { type: 'streak', target: 100 }, rarity: 1.0, isHidden: false, isEarned: false, earnedAt: null, progress: 14 },
-  { id: 'ach-jp-005', title: 'Vocabulary Master', description: 'Log 100 Japanese sessions.', categoryId: 'cat-japanese', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 8.5, isHidden: false, isEarned: false, earnedAt: null, progress: 28 },
-  // Spanish
-  { id: 'ach-es-001', title: 'Hola Mundo', description: 'Log your first Spanish session.', categoryId: 'cat-spanish', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 55.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-es-002', title: 'Bilingual', description: 'Study Spanish for 14 consecutive days.', categoryId: 'cat-spanish', tier: 'silver', type: 'one-time', condition: { type: 'streak', target: 14 }, rarity: 20.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Meal Prep
-  { id: 'ach-meal-001', title: 'Tupperware Ready', description: 'Log your first meal prep.', categoryId: 'cat-meal-prep', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 50.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-meal-002', title: 'Prep Master', description: 'Log 30 meal prep sessions.', categoryId: 'cat-meal-prep', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 30 }, rarity: 12.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Hydration
-  { id: 'ach-hydration-002', title: 'One Week of Water', description: 'Drink 3L of water 7 days in a row.', categoryId: 'cat-hydration', tier: 'silver', type: 'one-time', condition: { type: 'streak', target: 7 }, rarity: 15.0, isHidden: false, isEarned: false, earnedAt: null, progress: 1 },
-  { id: 'ach-hydration-003', title: 'Camel', description: 'Log 100 days of hydration.', categoryId: 'cat-hydration', tier: 'platinum', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 4.5, isHidden: false, isEarned: false, earnedAt: null, progress: 1 },
-  // Meditation
-  { id: 'ach-med-004', title: 'Zen Master', description: 'Log 100 meditation sessions.', categoryId: 'cat-meditation', tier: 'platinum', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 5.0, isHidden: false, isEarned: false, earnedAt: null, progress: 3 },
-  { id: 'ach-med-005', title: 'A Year of Peace', description: 'Meditate 365 days consecutively.', categoryId: 'cat-meditation', tier: 'red_diamond', type: 'one-time', condition: { type: 'streak', target: 365 }, rarity: 0.1, isHidden: true, isEarned: false, earnedAt: null, progress: 21 },
-  // Journaling
-  { id: 'ach-journal-003', title: 'Dear Diary II', description: 'Log 100 journal entries.', categoryId: 'cat-journaling', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 9.0, isHidden: false, isEarned: false, earnedAt: null, progress: 18 },
-  { id: 'ach-journal-004', title: 'Historian', description: 'Journal for 30 consecutive days.', categoryId: 'cat-journaling', tier: 'platinum', type: 'one-time', condition: { type: 'streak', target: 30 }, rarity: 4.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Domestic Travel
-  { id: 'ach-dom-001', title: 'Road Trip', description: 'Log your first domestic trip.', categoryId: 'cat-domestic', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 65.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-dom-002', title: 'Local Explorer', description: 'Log 10 domestic trips.', categoryId: 'cat-domestic', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 10 }, rarity: 15.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // International Travel
-  { id: 'ach-travel-003', title: 'Globetrotter', description: 'Log 20 international trips.', categoryId: 'cat-international', tier: 'diamond', type: 'one-time', condition: { type: 'count', target: 20 }, rarity: 1.5, isHidden: false, isEarned: false, earnedAt: null, progress: 1 },
-  { id: 'ach-travel-004', title: 'Frequent Flyer', description: 'Log 50 international trips.', categoryId: 'cat-international', tier: 'red_diamond', type: 'one-time', condition: { type: 'count', target: 50 }, rarity: 0.2, isHidden: true, isEarned: false, earnedAt: null, progress: 1 },
-  // Writing
-  { id: 'ach-write-003', title: 'Prolific', description: 'Write 100,000 words total.', categoryId: 'cat-writing', tier: 'platinum', type: 'one-time', condition: { type: 'cumulative', target: 100000, unit: 'words' }, rarity: 2.5, isHidden: false, isEarned: false, earnedAt: null, progress: 12400 },
-  { id: 'ach-write-004', title: 'Daily Blogger', description: 'Write for 30 consecutive days.', categoryId: 'cat-writing', tier: 'diamond', type: 'one-time', condition: { type: 'streak', target: 30 }, rarity: 1.8, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Music
-  { id: 'ach-music-001', title: 'First Note', description: 'Log your first music session.', categoryId: 'cat-music', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 45.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-music-002', title: 'Maestro in Training', description: 'Log 50 music sessions.', categoryId: 'cat-music', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 50 }, rarity: 10.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  // Career
-  { id: 'ach-career-002', title: 'Corporate Climber', description: 'Log 5 career milestones.', categoryId: 'cat-career', tier: 'platinum', type: 'one-time', condition: { type: 'count', target: 5 }, rarity: 5.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-career-003', title: 'CEO Material', description: 'Log 10 career milestones.', categoryId: 'cat-career', tier: 'diamond', type: 'one-time', condition: { type: 'count', target: 10 }, rarity: 0.8, isHidden: true, isEarned: false, earnedAt: null, progress: 0 },
-
-  // ── NEW CATEGORIES ADDITIONS (신규 카테고리 업적) ─────────────────────────
-  // Investing
-  { id: 'ach-inv-001', title: 'First Share', description: 'Log your first investment.', categoryId: 'cat-investing', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 40.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-inv-002', title: 'Bull Market', description: 'Log 10 investment sessions.', categoryId: 'cat-investing', tier: 'silver', type: 'one-time', condition: { type: 'count', target: 10 }, rarity: 25.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-inv-003', title: 'Compounding', description: 'Invest $10,000 total.', categoryId: 'cat-investing', tier: 'gold', type: 'one-time', condition: { type: 'cumulative', target: 10000, unit: 'USD' }, rarity: 12.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-inv-004', title: 'Whale', description: 'Invest $100,000 total.', categoryId: 'cat-investing', tier: 'diamond', type: 'one-time', condition: { type: 'cumulative', target: 100000, unit: 'USD' }, rarity: 1.5, isHidden: true, isEarned: false, earnedAt: null, progress: 0 },
-  
-  // Saving
-  { id: 'ach-sav-001', title: 'Piggy Bank', description: 'Log your first saving.', categoryId: 'cat-saving', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 60.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-sav-002', title: 'Consistent Saver', description: 'Log savings 30 times.', categoryId: 'cat-saving', tier: 'gold', type: 'one-time', condition: { type: 'count', target: 30 }, rarity: 18.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-sav-003', title: 'Emergency Fund', description: 'Save $5,000 total.', categoryId: 'cat-saving', tier: 'platinum', type: 'one-time', condition: { type: 'cumulative', target: 5000, unit: 'USD' }, rarity: 8.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-sav-004', title: 'FIRE Movement', description: 'Save 50 times consecutively without skipping a month (logged as 50 count).', categoryId: 'cat-saving', tier: 'diamond', type: 'one-time', condition: { type: 'count', target: 50 }, rarity: 2.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-
-  // Coding
-  { id: 'ach-code-001', title: 'Hello World', description: 'Log your first coding session.', categoryId: 'cat-coding', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 45.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-code-002', title: '10x Developer', description: 'Write 1,000 lines of code in one session.', categoryId: 'cat-coding', tier: 'gold', type: 'one-time', condition: { type: 'single', target: 1000, unit: 'lines' }, rarity: 10.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-code-003', title: 'Open Source', description: 'Log 100 coding sessions.', categoryId: 'cat-coding', tier: 'platinum', type: 'one-time', condition: { type: 'count', target: 100 }, rarity: 5.5, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-code-004', title: 'Git Green Square', description: 'Code for 30 consecutive days.', categoryId: 'cat-coding', tier: 'diamond', type: 'one-time', condition: { type: 'streak', target: 30 }, rarity: 1.1, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-
-  // Volunteering
-  { id: 'ach-vol-001', title: 'Helping Hand', description: 'Log your first volunteer session.', categoryId: 'cat-volunteering', tier: 'bronze', type: 'one-time', condition: { type: 'action' }, rarity: 35.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-vol-002', title: 'Community Pillar', description: 'Volunteer 10 times.', categoryId: 'cat-volunteering', tier: 'silver', type: 'one-time', condition: { type: 'count', target: 10 }, rarity: 15.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-vol-003', title: 'Philanthropist', description: 'Accumulate 100 hours of volunteering.', categoryId: 'cat-volunteering', tier: 'platinum', type: 'one-time', condition: { type: 'cumulative', target: 100, unit: 'hours' }, rarity: 4.0, isHidden: false, isEarned: false, earnedAt: null, progress: 0 },
-  { id: 'ach-vol-004', title: 'Saint', description: 'Accumulate 500 hours of volunteering.', categoryId: 'cat-volunteering', tier: 'red_diamond', type: 'one-time', condition: { type: 'cumulative', target: 500, unit: 'hours' }, rarity: 0.3, isHidden: true, isEarned: false, earnedAt: null, progress: 0 },
 ]
