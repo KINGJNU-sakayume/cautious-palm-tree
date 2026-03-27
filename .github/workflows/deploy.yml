@@ -1,3 +1,4 @@
+# 공식 Vite 배포 스크립트
 name: Deploy Vite App to GitHub Pages
 
 on:
@@ -28,9 +29,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
           
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         
       - name: Build project
         run: npm run build
