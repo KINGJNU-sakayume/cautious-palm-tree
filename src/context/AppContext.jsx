@@ -60,7 +60,6 @@ function appReducer(state, action) {
       }
 
     case 'SOFT_DELETE_ACHIEVEMENTS_FOR_CATEGORY':
-      // Hide achievements for deleted categories
       return {
         ...state,
         achievements: state.achievements.map(a =>
@@ -69,19 +68,43 @@ function appReducer(state, action) {
       }
 
     // ── Categories ────────────────────────────────────────────────────────
-    case 'ADD_CATEGORY':
-      return { ...state, categories: [...state.categories, action.category] }
-
-    case 'RENAME_CATEGORY':
-      return {
-        ...state,
-        categories: state.categories.map(c =>
-          c.id === action.id ? { ...c, name: action.name } : c
-        ),
+    /**
+     * MANAGE_CATEGORY — single action for all non-destructive category operations.
+     *
+     *   op: 'add'      — add a new category leaf
+     *       payload: { category: { id, name, parentId } }
+     *
+     *   op: 'rename'   — change a category's display name
+     *       payload: { id, name }
+     *
+     *   op: 'reparent' — move a category to a new parent (or root)
+     *       payload: { id, parentId }   (parentId === null → root)
+     */
+    case 'MANAGE_CATEGORY': {
+      const { op } = action
+      if (op === 'add') {
+        return { ...state, categories: [...state.categories, action.category] }
       }
+      if (op === 'rename') {
+        return {
+          ...state,
+          categories: state.categories.map(c =>
+            c.id === action.id ? { ...c, name: action.name } : c
+          ),
+        }
+      }
+      if (op === 'reparent') {
+        return {
+          ...state,
+          categories: state.categories.map(c =>
+            c.id === action.id ? { ...c, parentId: action.parentId } : c
+          ),
+        }
+      }
+      return state
+    }
 
     case 'DELETE_CATEGORY': {
-      // Recursively delete all descendants
       const allDeletedIds = [action.id, ...getDescendantIds(action.id, state.categories)]
       return {
         ...state,
@@ -102,15 +125,6 @@ function appReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
-  // We need useToast — but ToastProvider is outside AppProvider in main.jsx
-  // so we can't call it here. Instead, AppContext exposes a saveRecord function
-  // that receives addToasts as a param, OR we use a callback pattern.
-  // To keep the architecture clean: saveRecord is exposed as a method on the context value,
-  // and we call useToast inside the AppProvider after wrapping works.
-  // Since ToastProvider wraps AppProvider's children but not AppProvider itself,
-  // we handle this by using a ref-based approach or by calling from components.
-  // SOLUTION: AppContext provides a `saveRecord` that accepts an `onUnlocked` callback.
-  // The Dashboard calls saveRecord and passes addToasts itself.
 
   // ── Category actions ────────────────────────────────────────────────
   const addCategory = useCallback((categoryData) => {
@@ -119,12 +133,22 @@ export function AppProvider({ children }) {
       name: categoryData.name,
       parentId: categoryData.parentId || null,
     }
-    dispatch({ type: 'ADD_CATEGORY', category })
+    dispatch({ type: 'MANAGE_CATEGORY', op: 'add', category })
     return category
   }, [])
 
   const renameCategory = useCallback((id, name) => {
-    dispatch({ type: 'RENAME_CATEGORY', id, name })
+    dispatch({ type: 'MANAGE_CATEGORY', op: 'rename', id, name })
+  }, [])
+
+  /**
+   * Move a category to a new parent.
+   * Pass newParentId = null to promote the node to root level.
+   * Circular-reference guard: callers (CategoryTree) are responsible for
+   * not passing a descendant as the new parent.
+   */
+  const reparentCategory = useCallback((id, newParentId) => {
+    dispatch({ type: 'MANAGE_CATEGORY', op: 'reparent', id, parentId: newParentId ?? null })
   }, [])
 
   const deleteCategory = useCallback((id) => {
@@ -153,11 +177,6 @@ export function AppProvider({ children }) {
   }, [])
 
   // ── Record save flow ────────────────────────────────────────────────
-  /**
-   * Save a record and run the full achievement evaluation flow.
-   * @param {Object} recordData - partial record (categoryId, date, value, unit, memo, photoUrl)
-   * @param {Function} onUnlocked - called with array of newly unlocked Achievement objects
-   */
   const saveRecord = useCallback((recordData, onUnlocked) => {
     const newRecord = {
       id: generateId('rec'),
@@ -167,50 +186,39 @@ export function AppProvider({ children }) {
       unit: recordData.unit || null,
       memo: recordData.memo || null,
       photoUrl: recordData.photoUrl || null,
+      tags: Array.isArray(recordData.tags) ? recordData.tags : [],
       unlockedAchievementIds: [],
     }
 
-    // Step 1: Build next-state records (before dispatching, to avoid stale reads)
     const nextRecords = [...state.records, newRecord]
-
-    // Step 2: Dispatch ADD_RECORD
     dispatch({ type: 'ADD_RECORD', record: newRecord })
 
-    // Step 3: Evaluate regular achievements
     const unlockedIds = evaluateAchievements(newRecord, nextRecords, state.achievements)
 
-    // Step 4: Unlock each regular achievement + check for meta unlocks
-    // We need to build an "imagined" achievements array with the newly unlocked ones marked
     let nextAchievements = state.achievements.map(a =>
       unlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: todayStr() } : a
     )
-
     unlockedIds.forEach(id => {
       dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
     })
 
-    // Step 5: Evaluate meta achievements using the updated achievements array
     const metaUnlockedIds = evaluateMetaAchievements(nextAchievements)
-
     nextAchievements = nextAchievements.map(a =>
       metaUnlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: todayStr() } : a
     )
-
     metaUnlockedIds.forEach(id => {
       dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
     })
 
-    // Step 6: Update the record's unlockedAchievementIds
     const allUnlockedIds = [...unlockedIds, ...metaUnlockedIds]
     if (allUnlockedIds.length > 0) {
       dispatch({ type: 'UPDATE_RECORD_UNLOCKS', recordId: newRecord.id, achievementIds: allUnlockedIds })
     }
 
-    // Step 7: Notify caller with unlocked achievement objects for toasts
     if (onUnlocked && allUnlockedIds.length > 0) {
-      const unlockedAchievements = allUnlockedIds.map(id =>
-        nextAchievements.find(a => a.id === id)
-      ).filter(Boolean)
+      const unlockedAchievements = allUnlockedIds
+        .map(id => nextAchievements.find(a => a.id === id))
+        .filter(Boolean)
       onUnlocked(unlockedAchievements)
     }
 
@@ -221,10 +229,11 @@ export function AppProvider({ children }) {
     categories: state.categories,
     records: state.records,
     achievements: state.achievements.filter(a => !a._softDeleted),
-    allAchievements: state.achievements, // includes soft-deleted, for internal use
+    allAchievements: state.achievements,
     // Category actions
     addCategory,
     renameCategory,
+    reparentCategory,
     deleteCategory,
     // Achievement actions
     addAchievement,
