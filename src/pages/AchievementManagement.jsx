@@ -136,13 +136,13 @@ export default function AchievementManagement() {
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto scrollbar-thin">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
               <tr>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">Tier</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Title</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">Type</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">Category</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-36">Category</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">Condition</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-20">Status</th>
               </tr>
@@ -162,8 +162,9 @@ export default function AchievementManagement() {
                   <td className="px-4 py-2.5">
                     <TrophyTierBadge tier={a.tier} size="xs" />
                   </td>
-                  <td className="px-4 py-2.5">
-                    <span className="font-medium text-slate-800 truncate block max-w-xs">
+                  <td className="px-4 py-2.5 min-w-0">
+                    {/* FIX: removed hard-coded max-w-xs; truncate now clips only when td itself is too narrow */}
+                    <span className="font-medium text-slate-800 truncate block w-full">
                       {a.isHidden && !a.isEarned ? '??? (Hidden)' : a.title}
                     </span>
                   </td>
@@ -172,13 +173,15 @@ export default function AchievementManagement() {
                       {typeLabel(a.type)}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 hidden xl:table-cell">
-                    <span className="text-xs text-slate-400 truncate block max-w-[140px]">
+                  <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
+                    {/* FIX: removed hard-coded max-w-[140px]; truncate defers to column width */}
+                    <span className="text-xs text-slate-400 truncate block w-full">
                       {getCategoryPathLabel(a.categoryId)}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 hidden xl:table-cell">
-                    <span className="text-xs text-slate-400 truncate block max-w-[160px]">
+                  <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
+                    {/* FIX: removed hard-coded max-w-[160px]; truncate defers to column width */}
+                    <span className="text-xs text-slate-400 truncate block w-full">
                       {conditionSummaryText(a.condition)}
                     </span>
                   </td>
