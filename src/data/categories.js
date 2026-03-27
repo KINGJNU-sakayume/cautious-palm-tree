@@ -39,4 +39,15 @@ export const categories = [
 
   // Career
   { id: 'cat-career', name: 'Career', parentId: null },
-]
+
+  // Finance
+  { id: 'cat-finance', name: 'Finance', parentId: null },
+  { id: 'cat-investing', name: 'Investing', parentId: 'cat-finance' },
+  { id: 'cat-saving', name: 'Saving', parentId: 'cat-finance' },
+
+  // Tech & Social
+  { id: 'cat-tech', name: 'Tech', parentId: null },
+  { id: 'cat-coding', name: 'Coding', parentId: 'cat-tech' },
+  { id: 'cat-social', name: 'Social', parentId: null },
+  { id: 'cat-volunteering', name: 'Volunteering', parentId: 'cat-social' },
+];
