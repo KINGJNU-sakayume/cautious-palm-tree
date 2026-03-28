@@ -54,7 +54,7 @@ export function tierLabel(tier) {
 /**
  * Human-readable summary of an achievement condition.
  */
-export function conditionSummaryText(condition) {
+export function conditionSummaryText(condition, progress) {
   if (!condition) return '—'
   switch (condition.type) {
     case 'action':
@@ -81,6 +81,8 @@ export function conditionSummaryText(condition) {
       return `특정 업적 ${condition.achievementIds?.length || 0}개 획득`
     case 'meta_clear':
       return '카테고리 내 모든 업적 달성'
+    case 'tag_set_complete':
+      return `${progress ?? 0} / ${condition.tags.length} 다리 완주`
     default:
       return condition.type
   }

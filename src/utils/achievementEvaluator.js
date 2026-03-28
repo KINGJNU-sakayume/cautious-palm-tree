@@ -72,6 +72,16 @@ export function evaluateCondition(condition, records, newRecord) {
       return matching.length >= condition.target
     }
 
+    /**
+     * tag_set_complete: all tags in condition.tags appear at least once across category records.
+     * condition shape: { type: 'tag_set_complete', tags: string[], target: number }
+     */
+    case 'tag_set_complete': {
+      const seen = new Set(categoryRecords.flatMap(r => r.tags || []))
+      const matched = condition.tags.filter(t => seen.has(t)).length
+      return matched >= condition.tags.length
+    }
+
     default:
       return false
   }
@@ -183,6 +193,10 @@ export function computeProgress(achievement, allRecords) {
       return categoryRecords.some(r => (r.tags || []).includes(condition.tag)) ? 1 : 0
     case 'tag_count':
       return categoryRecords.filter(r => (r.tags || []).includes(condition.tag)).length
+    case 'tag_set_complete': {
+      const seen = new Set(categoryRecords.flatMap(r => r.tags || []))
+      return condition.tags.filter(t => seen.has(t)).length
+    }
     default:
       return 0
   }

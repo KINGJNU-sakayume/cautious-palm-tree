@@ -434,6 +434,30 @@ export const achievements = [
     progress: 1,
   },
 
+  {
+    id: 'ach-travel-003',
+    title: '한강의 기적',
+    description: '한강의 21개 다리를 모두 도보로 건넜습니다.',
+    categoryId: 'cat-domestic',
+    tier: 'platinum',
+    type: 'one-time',
+    condition: {
+      type: 'tag_set_complete',
+      tags: [
+        '일산대교', '마곡대교', '가양대교', '성산대교', '양화대교',
+        '당산철교', '서강대교', '마포대교', '원효대교', '한강대교',
+        '동작대교', '반포대교', '한남대교', '동호대교', '성수대교',
+        '청담대교', '잠실대교', '올림픽대교', '천호대교', '광진교', '암사대교',
+      ],
+      target: 21,
+    },
+    rarity: 1.2,
+    isHidden: false,
+    isEarned: false,
+    earnedAt: null,
+    progress: 0,
+  },
+
   // ── WRITING ───────────────────────────────────────────────────────────
   {
     id: 'ach-write-001',
