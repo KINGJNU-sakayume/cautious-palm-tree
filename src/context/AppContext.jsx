@@ -15,11 +15,9 @@ import {
   upsertRecord,
   upsertAchievement,
   deleteAchievement as dbDeleteAchievement,
-  bulkUpsertCategories,
-  bulkUpsertRecords,
   bulkUpsertAchievements,
 } from '@/lib/db.js'
-import { seedIfEmpty, topoSortCategories } from '@/lib/seed.js'
+import { seedIfEmpty } from '@/lib/seed.js'
 
 const AppContext = createContext(null)
 
@@ -350,44 +348,6 @@ export function AppProvider({ children }) {
     return newRecord
   }, [state.records, state.achievements])
 
-  // ── Data Import / Export ───────────────────────────────────────────
-  const exportData = useCallback(() => {
-    const data = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      categories: state.categories,
-      records: state.records,
-      achievements: state.achievements,
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `achievement-library-${new Date().toISOString().slice(0, 10)}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, [state])
-
-  const importData = useCallback(async (jsonData) => {
-    if (
-      !Array.isArray(jsonData.categories) ||
-      !Array.isArray(jsonData.records) ||
-      !Array.isArray(jsonData.achievements)
-    ) {
-      throw new Error('유효하지 않은 데이터 형식입니다')
-    }
-    dispatch({ type: 'IMPORT_DATA', data: jsonData })
-    try {
-      await bulkUpsertCategories(topoSortCategories(jsonData.categories))
-      await bulkUpsertRecords(jsonData.records)
-      await bulkUpsertAchievements(jsonData.achievements)
-    } catch (err) {
-      console.error('importData DB error:', err)
-    }
-  }, [])
-
   const value = {
     categories: state.categories,
     records: state.records,
@@ -408,9 +368,6 @@ export function AppProvider({ children }) {
     saveRecord,
     // Raw dispatch for advanced use
     dispatch,
-    // Data portability
-    exportData,
-    importData,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
