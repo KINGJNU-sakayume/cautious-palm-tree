@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useState } from 'react'
 import { categories as initialCategories } from '@/data/categories.js'
 import { achievements as initialAchievements } from '@/data/achievements.js'
 import { records as initialRecords } from '@/data/records.js'
@@ -6,13 +6,27 @@ import { evaluateAchievements, evaluateMetaAchievements, computeProgress } from 
 import { getDescendantIds } from '@/utils/categoryTree.js'
 import { generateId, todayStr } from '@/utils/formatters.js'
 import { useToast } from './ToastContext.jsx'
+import {
+  fetchAllCategories,
+  fetchAllRecords,
+  fetchAllAchievements,
+  upsertCategory,
+  deleteCategory as dbDeleteCategory,
+  upsertRecord,
+  upsertAchievement,
+  deleteAchievement as dbDeleteAchievement,
+  bulkUpsertCategories,
+  bulkUpsertRecords,
+  bulkUpsertAchievements,
+} from '@/lib/db.js'
+import { seedIfEmpty, topoSortCategories } from '@/lib/seed.js'
 
 const AppContext = createContext(null)
 
-const initialState = {
-  categories: initialCategories,
-  records: initialRecords,
-  achievements: initialAchievements,
+const emptyState = {
+  categories: [],
+  records: [],
+  achievements: [],
 }
 
 function appReducer(state, action) {
@@ -140,22 +154,77 @@ function appReducer(state, action) {
 }
 
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(appReducer, initialState)
+  const [state, dispatch] = useReducer(appReducer, emptyState)
+  const [loading, setLoading] = useState(true)
+  const [dbError, setDbError] = useState(null)
+
+  // ── Bootstrap: load from Supabase on mount ───────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    async function bootstrap() {
+      try {
+        const [cats, recs, achs] = await Promise.all([
+          fetchAllCategories(),
+          fetchAllRecords(),
+          fetchAllAchievements(),
+        ])
+
+        if (cats.length === 0 || recs.length === 0 || achs.length === 0) {
+          await seedIfEmpty({
+            categoriesCount: cats.length,
+            recordsCount: recs.length,
+            achievementsCount: achs.length,
+          })
+          const [cats2, recs2, achs2] = await Promise.all([
+            fetchAllCategories(),
+            fetchAllRecords(),
+            fetchAllAchievements(),
+          ])
+          if (!cancelled) {
+            dispatch({ type: 'IMPORT_DATA', data: { categories: cats2, records: recs2, achievements: achs2 } })
+          }
+        } else {
+          if (!cancelled) {
+            dispatch({ type: 'IMPORT_DATA', data: { categories: cats, records: recs, achievements: achs } })
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Supabase bootstrap error:', err)
+          setDbError(err.message)
+          // Fallback to static data so the app remains usable offline
+          dispatch({
+            type: 'IMPORT_DATA',
+            data: { categories: initialCategories, records: initialRecords, achievements: initialAchievements },
+          })
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    bootstrap()
+    return () => { cancelled = true }
+  }, [])
 
   // ── Category actions ────────────────────────────────────────────────
-  const addCategory = useCallback((categoryData) => {
+  const addCategory = useCallback(async (categoryData) => {
     const category = {
       id: generateId('cat'),
       name: categoryData.name,
       parentId: categoryData.parentId || null,
     }
     dispatch({ type: 'MANAGE_CATEGORY', op: 'add', category })
+    try { await upsertCategory(category) }
+    catch (err) { console.error('addCategory DB error:', err) }
     return category
   }, [])
 
-  const renameCategory = useCallback((id, name) => {
+  const renameCategory = useCallback(async (id, name) => {
     dispatch({ type: 'MANAGE_CATEGORY', op: 'rename', id, name })
-  }, [])
+    const cat = state.categories.find(c => c.id === id)
+    try { await upsertCategory({ id, name, parentId: cat?.parentId ?? null }) }
+    catch (err) { console.error('renameCategory DB error:', err) }
+  }, [state.categories])
 
   /**
    * Move a category to a new parent.
@@ -163,16 +232,21 @@ export function AppProvider({ children }) {
    * Circular-reference guard: callers (CategoryTree) are responsible for
    * not passing a descendant as the new parent.
    */
-  const reparentCategory = useCallback((id, newParentId) => {
+  const reparentCategory = useCallback(async (id, newParentId) => {
     dispatch({ type: 'MANAGE_CATEGORY', op: 'reparent', id, parentId: newParentId ?? null })
-  }, [])
+    const cat = state.categories.find(c => c.id === id)
+    try { await upsertCategory({ ...cat, parentId: newParentId ?? null }) }
+    catch (err) { console.error('reparentCategory DB error:', err) }
+  }, [state.categories])
 
-  const deleteCategory = useCallback((id) => {
+  const deleteCategory = useCallback(async (id) => {
     dispatch({ type: 'DELETE_CATEGORY', id })
+    try { await dbDeleteCategory(id) }
+    catch (err) { console.error('deleteCategory DB error:', err) }
   }, [])
 
   // ── Achievement actions ─────────────────────────────────────────────
-  const addAchievement = useCallback((achievementData) => {
+  const addAchievement = useCallback(async (achievementData) => {
     const achievement = {
       id: generateId('ach'),
       isEarned: false,
@@ -181,19 +255,25 @@ export function AppProvider({ children }) {
       ...achievementData,
     }
     dispatch({ type: 'ADD_ACHIEVEMENT', achievement })
+    try { await upsertAchievement(achievement) }
+    catch (err) { console.error('addAchievement DB error:', err) }
     return achievement
   }, [])
 
-  const updateAchievement = useCallback((achievement) => {
+  const updateAchievement = useCallback(async (achievement) => {
     dispatch({ type: 'UPDATE_ACHIEVEMENT', achievement })
+    try { await upsertAchievement(achievement) }
+    catch (err) { console.error('updateAchievement DB error:', err) }
   }, [])
 
-  const deleteAchievement = useCallback((id) => {
+  const deleteAchievement = useCallback(async (id) => {
     dispatch({ type: 'DELETE_ACHIEVEMENT', id })
+    try { await dbDeleteAchievement(id) }
+    catch (err) { console.error('deleteAchievement DB error:', err) }
   }, [])
 
   // ── Record save flow ────────────────────────────────────────────────
-  const saveRecord = useCallback((recordData, onUnlocked) => {
+  const saveRecord = useCallback(async (recordData, onUnlocked) => {
     const newRecord = {
       id: generateId('rec'),
       categoryId: recordData.categoryId,
@@ -235,6 +315,7 @@ export function AppProvider({ children }) {
     }
 
     const allUnlockedIds = [...unlockedIds, ...metaUnlockedIds]
+    const finalRecord = { ...newRecord, unlockedAchievementIds: allUnlockedIds }
     if (allUnlockedIds.length > 0) {
       dispatch({ type: 'UPDATE_RECORD_UNLOCKS', recordId: newRecord.id, achievementIds: allUnlockedIds })
     }
@@ -244,6 +325,26 @@ export function AppProvider({ children }) {
         .map(id => nextAchievements.find(a => a.id === id))
         .filter(Boolean)
       onUnlocked(unlockedAchievements)
+    }
+
+    // Persist to Supabase
+    try {
+      await upsertRecord(finalRecord)
+
+      const achievementsToUpsert = [
+        ...allUnlockedIds.map(id => nextAchievements.find(a => a.id === id)).filter(Boolean),
+        ...progressUpdates
+          .map(u => {
+            const a = state.achievements.find(a => a.id === u.id)
+            return a ? { ...a, progress: u.progress } : null
+          })
+          .filter(Boolean),
+      ]
+      if (achievementsToUpsert.length > 0) {
+        await bulkUpsertAchievements(achievementsToUpsert)
+      }
+    } catch (err) {
+      console.error('saveRecord DB error:', err)
     }
 
     return newRecord
@@ -269,7 +370,7 @@ export function AppProvider({ children }) {
     URL.revokeObjectURL(url)
   }, [state])
 
-  const importData = useCallback((jsonData) => {
+  const importData = useCallback(async (jsonData) => {
     if (
       !Array.isArray(jsonData.categories) ||
       !Array.isArray(jsonData.records) ||
@@ -278,6 +379,13 @@ export function AppProvider({ children }) {
       throw new Error('유효하지 않은 데이터 형식입니다')
     }
     dispatch({ type: 'IMPORT_DATA', data: jsonData })
+    try {
+      await bulkUpsertCategories(topoSortCategories(jsonData.categories))
+      await bulkUpsertRecords(jsonData.records)
+      await bulkUpsertAchievements(jsonData.achievements)
+    } catch (err) {
+      console.error('importData DB error:', err)
+    }
   }, [])
 
   const value = {
@@ -285,6 +393,8 @@ export function AppProvider({ children }) {
     records: state.records,
     achievements: state.achievements.filter(a => !a._softDeleted),
     allAchievements: state.achievements,
+    loading,
+    dbError,
     // Category actions
     addCategory,
     renameCategory,
