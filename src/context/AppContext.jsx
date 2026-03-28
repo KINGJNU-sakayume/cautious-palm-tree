@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useCallback } from 'react
 import { categories as initialCategories } from '@/data/categories.js'
 import { achievements as initialAchievements } from '@/data/achievements.js'
 import { records as initialRecords } from '@/data/records.js'
-import { evaluateAchievements, evaluateMetaAchievements } from '@/utils/achievementEvaluator.js'
+import { evaluateAchievements, evaluateMetaAchievements, computeProgress } from '@/utils/achievementEvaluator.js'
 import { getDescendantIds } from '@/utils/categoryTree.js'
 import { generateId, todayStr } from '@/utils/formatters.js'
 import { useToast } from './ToastContext.jsx'
@@ -57,6 +57,15 @@ function appReducer(state, action) {
       return {
         ...state,
         achievements: state.achievements.filter(a => a.id !== action.id),
+      }
+
+    case 'UPDATE_ACHIEVEMENTS_PROGRESS':
+      return {
+        ...state,
+        achievements: state.achievements.map(a => {
+          const update = action.updates.find(u => u.id === a.id)
+          return update ? { ...a, progress: update.progress } : a
+        }),
       }
 
     case 'SOFT_DELETE_ACHIEVEMENTS_FOR_CATEGORY':
@@ -209,6 +218,14 @@ export function AppProvider({ children }) {
     metaUnlockedIds.forEach(id => {
       dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
     })
+
+    // Update partial progress for non-earned achievements in this category
+    const progressUpdates = state.achievements
+      .filter(a => a.categoryId === newRecord.categoryId && !a.isEarned && a.type !== 'meta' && !unlockedIds.includes(a.id))
+      .map(a => ({ id: a.id, progress: computeProgress(a, nextRecords) }))
+    if (progressUpdates.length > 0) {
+      dispatch({ type: 'UPDATE_ACHIEVEMENTS_PROGRESS', updates: progressUpdates })
+    }
 
     const allUnlockedIds = [...unlockedIds, ...metaUnlockedIds]
     if (allUnlockedIds.length > 0) {
