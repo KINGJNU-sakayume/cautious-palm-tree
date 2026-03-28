@@ -7,6 +7,7 @@ import { formatDate, conditionSummaryText, tierLabel } from '@/utils/formatters.
 import { getCategoryPath } from '@/utils/categoryTree.js'
 
 const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'red_diamond']
+const ELITE_TIERS = new Set(['diamond', 'red_diamond'])
 
 function computeStreak(records) {
   const dateset = new Set(records.map(r => r.date))
@@ -16,7 +17,7 @@ function computeStreak(records) {
   for (let i = 0; i < 730; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
-    const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     if (dateset.has(s)) {
       current++
       if (current > longest) longest = current
@@ -28,12 +29,11 @@ function computeStreak(records) {
 }
 
 function AchievementTimeline({ achievements }) {
-  // Last 6 months
   const months = []
   const today = new Date()
   for (let i = 5; i >= 0; i--) {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const label = d.toLocaleDateString('en-US', { month: 'short' })
     const count = achievements.filter(a => a.isEarned && a.earnedAt && a.earnedAt.startsWith(key)).length
     months.push({ key, label, count })
@@ -66,15 +66,12 @@ function DetailPanel({ achievement, onClose }) {
         <TrophyTierBadge tier={achievement.tier} size="lg" />
         <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-lg">✕</button>
       </div>
-
       <h2 className="text-xl font-extrabold text-slate-900 mb-1">
         {achievement.isHidden && !achievement.isEarned ? '???' : achievement.title}
       </h2>
-
       {(!achievement.isHidden || achievement.isEarned) && (
         <p className="text-sm text-slate-600 mb-4 leading-relaxed">{achievement.description}</p>
       )}
-
       <div className="space-y-3 text-sm">
         <div className="flex justify-between">
           <span className="text-slate-500">Tier</span>
@@ -125,9 +122,55 @@ function DetailPanel({ achievement, onClose }) {
   )
 }
 
+// ── EliteAchievementsSection ──────────────────────────────────────────────────
+// Replaces the general achievement list in the default (no category selected) view.
+
+function EliteAchievementsSection({ achievements, onSelect, selectedId }) {
+  const eliteEarned = achievements.filter(a => ELITE_TIERS.has(a.tier) && a.isEarned)
+
+  // Sort: red_diamond first, then diamond; within each tier by earnedAt desc.
+  const sorted = [...eliteEarned].sort((a, b) => {
+    if (a.tier !== b.tier) {
+      return a.tier === 'red_diamond' ? -1 : 1
+    }
+    return (b.earnedAt || '').localeCompare(a.earnedAt || '')
+  })
+
+  return (
+    <div>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+        <span>💎</span> Elite Achievements
+        <span className="text-[10px] font-normal text-slate-400 normal-case tracking-normal">
+          Diamond &amp; Red Diamond
+        </span>
+      </h3>
+
+      {sorted.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 px-4 text-center">
+          <p className="text-sm font-semibold text-slate-400">No elite achievements earned yet</p>
+          <p className="text-xs text-slate-400 mt-1">Diamond and Red Diamond tiers will appear here once unlocked.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sorted.map(a => (
+            <AchievementListItem
+              key={a.id}
+              achievement={a}
+              isSelected={selectedId === a.id}
+              onClick={() => onSelect(selectedId === a.id ? null : a)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── AchievementShowcase ───────────────────────────────────────────────────────
+
 export default function AchievementShowcase() {
   const { achievements, records, categories } = useApp()
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null) // null = All
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [selectedAchievement, setSelectedAchievement] = useState(null)
 
   const earned = achievements.filter(a => a.isEarned)
@@ -138,39 +181,34 @@ export default function AchievementShowcase() {
     return e.length > 0 ? e.reduce((min, a) => a.rarity < min.rarity ? a : min, e[0]) : null
   }, [earned])
 
-  // Root categories for left nav
   const rootCategories = categories.filter(c => c.parentId === null)
 
-  // Filter achievements by selected category
   const filteredAchievements = useMemo(() => {
     if (!selectedCategoryId) return achievements
     return achievements.filter(a => a.categoryId === selectedCategoryId)
   }, [achievements, selectedCategoryId])
 
-  // Recent unlocks (last 5 earned)
-  const recentUnlocks = useMemo(() => {
-    return [...earned]
+  const recentUnlocks = useMemo(() => (
+    [...earned]
       .sort((a, b) => (b.earnedAt || '').localeCompare(a.earnedAt || ''))
       .slice(0, 5)
-  }, [earned])
+  ), [earned])
 
-  // Category progress bars
-  const categoryProgress = useMemo(() => {
-    return rootCategories.map(cat => {
+  const categoryProgress = useMemo(() => (
+    rootCategories.map(cat => {
       const catAchs = achievements.filter(a => a.categoryId === cat.id || a.categoryId?.startsWith(cat.id))
       const total = catAchs.length
       const earnedCount = catAchs.filter(a => a.isEarned).length
       return { cat, earnedCount, total }
     }).filter(x => x.total > 0)
-  }, [categories, achievements])
+  ), [categories, achievements])
 
-  // Tier counts
-  const tierCounts = useMemo(() => {
-    return TIERS.reduce((acc, tier) => {
+  const tierCounts = useMemo(() => (
+    TIERS.reduce((acc, tier) => {
       acc[tier] = earned.filter(a => a.tier === tier).length
       return acc
     }, {})
-  }, [earned])
+  ), [earned])
 
   const hasDetailPanel = !!selectedAchievement
 
@@ -233,6 +271,7 @@ export default function AchievementShowcase() {
         {/* ── WoW-style Browser ────────────────────────────────────── */}
         <section className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
           <div className="flex" style={{ minHeight: 500 }}>
+
             {/* Left: category list */}
             <div className="w-48 flex-shrink-0 border-r border-slate-200 py-3 overflow-y-auto scrollbar-thin">
               <button
@@ -264,69 +303,85 @@ export default function AchievementShowcase() {
 
             {/* Right: content */}
             <div className="flex flex-1 min-w-0">
-              {/* Achievement list */}
+
+              {/* Achievement list / default panel */}
               <div className={`overflow-y-auto scrollbar-thin p-4 space-y-3 ${hasDetailPanel ? 'w-1/2' : 'flex-1'}`}>
-                {/* Recent unlocks */}
-                {!selectedCategoryId && recentUnlocks.length > 0 && (
-                  <div className="mb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Recent Unlocks
-                    </h3>
-                    <div className="space-y-1.5">
-                      {recentUnlocks.map(a => (
-                        <div key={a.id} className="flex items-center gap-3 px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
-                          <TrophyTierBadge tier={a.tier} size="xs" />
-                          <span className="text-sm font-semibold text-slate-800 flex-1 truncate">{a.title}</span>
-                          <span className="text-xs text-slate-400 flex-shrink-0">{formatDate(a.earnedAt)}</span>
+
+                {/* ── Default view (no category selected) ── */}
+                {!selectedCategoryId && (
+                  <>
+                    {/* Recent unlocks */}
+                    {recentUnlocks.length > 0 && (
+                      <div className="mb-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                          Recent Unlocks
+                        </h3>
+                        <div className="space-y-1.5">
+                          {recentUnlocks.map(a => (
+                            <div key={a.id} className="flex items-center gap-3 px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
+                              <TrophyTierBadge tier={a.tier} size="xs" />
+                              <span className="text-sm font-semibold text-slate-800 flex-1 truncate">{a.title}</span>
+                              <span className="text-xs text-slate-400 flex-shrink-0">{formatDate(a.earnedAt)}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
+
+                    {/* Category progress */}
+                    {categoryProgress.length > 0 && (
+                      <div className="mb-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                          Category Progress
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {categoryProgress.map(({ cat, earnedCount, total }) => (
+                            <div key={cat.id} className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-medium text-slate-700 truncate">{cat.name}</span>
+                                <span className="text-slate-400 flex-shrink-0 ml-1">{earnedCount}/{total}</span>
+                              </div>
+                              <ProgressBar current={earnedCount} target={total} heightClass="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Elite Achievements — replaces the general earned list */}
+                    <EliteAchievementsSection
+                      achievements={achievements}
+                      onSelect={setSelectedAchievement}
+                      selectedId={selectedAchievement?.id}
+                    />
+                  </>
                 )}
 
-                {/* Category progress grid */}
-                {!selectedCategoryId && categoryProgress.length > 0 && (
-                  <div className="mb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Category Progress
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {categoryProgress.map(({ cat, earnedCount, total }) => (
-                        <div key={cat.id} className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="font-medium text-slate-700 truncate">{cat.name}</span>
-                            <span className="text-slate-400 flex-shrink-0 ml-1">{earnedCount}/{total}</span>
-                          </div>
-                          <ProgressBar current={earnedCount} target={total} heightClass="h-2" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Achievement list */}
-                <div>
-                  {selectedCategoryId && (
+                {/* ── Category view ── */}
+                {selectedCategoryId && (
+                  <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                       {categories.find(c => c.id === selectedCategoryId)?.name} Achievements
                     </h3>
-                  )}
-                  {filteredAchievements.length === 0 && (
-                    <div className="text-sm text-slate-400 py-6 text-center">No achievements in this category</div>
-                  )}
-                  <div className="space-y-2">
-                    {filteredAchievements.map(a => (
-                      <AchievementListItem
-                        key={a.id}
-                        achievement={a}
-                        isSelected={selectedAchievement?.id === a.id}
-                        onClick={() => setSelectedAchievement(
-                          selectedAchievement?.id === a.id ? null : a
-                        )}
-                      />
-                    ))}
+                    {filteredAchievements.length === 0 && (
+                      <div className="text-sm text-slate-400 py-6 text-center">
+                        No achievements in this category
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {filteredAchievements.map(a => (
+                        <AchievementListItem
+                          key={a.id}
+                          achievement={a}
+                          isSelected={selectedAchievement?.id === a.id}
+                          onClick={() => setSelectedAchievement(
+                            selectedAchievement?.id === a.id ? null : a
+                          )}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Detail panel */}
