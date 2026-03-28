@@ -1,7 +1,7 @@
 import React from 'react'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
 import ProgressBar from './ProgressBar.jsx'
-import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
+import { formatDate, conditionSummaryText, getConditionTarget } from '@/utils/formatters.js'
 
 export default function AchievementCard({ achievement, onClick }) {
   const isHiddenLocked = achievement.isHidden && !achievement.isEarned
@@ -56,11 +56,7 @@ export default function AchievementCard({ achievement, onClick }) {
           <div className="text-xs text-slate-400 mb-1">{conditionSummaryText(achievement.condition, achievement.progress)}</div>
           <ProgressBar
             current={achievement.progress || 0}
-            target={
-              achievement.condition.target ||
-              (achievement.condition.conditions?.[0]?.target) ||
-              1
-            }
+            target={getConditionTarget(achievement.condition)}
             tier={achievement.tier}
             heightClass="h-2"
           />

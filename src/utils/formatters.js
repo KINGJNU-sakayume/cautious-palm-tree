@@ -123,3 +123,55 @@ export function relativeTime(dateStr) {
 export function generateId(prefix = 'id') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
+
+/**
+ * Resolves the numeric progress target from an achievement condition,
+ * handling simple, composite, and action-type conditions.
+ */
+export function getConditionTarget(condition) {
+  if (!condition) return 1
+  if (condition.target) return condition.target
+  if (condition.conditions?.[0]?.target) return condition.conditions[0].target
+  if (condition.type === 'action') return 1
+  return 1
+}
+
+/**
+ * Canonical display string for an achievement's earned/locked status.
+ */
+export function achievementStatusText(isEarned) {
+  return isEarned ? '✓ 획득' : '🔒 잠김'
+}
+
+/**
+ * Motivational subtext for a tier-based toast notification.
+ */
+export function tierSubtext(tier) {
+  const map = {
+    red_diamond: '탁월한 업적을 달성했습니다!',
+    diamond:     '탁월한 업적을 달성했습니다!',
+    platinum:    '희귀한 마일스톤에 도달했습니다!',
+    gold:        '희귀한 마일스톤에 도달했습니다!',
+    silver:      '새로운 업적을 달성했습니다!',
+    bronze:      '새로운 업적을 달성했습니다!',
+  }
+  return map[tier] || '새로운 업적을 달성했습니다!'
+}
+
+/**
+ * Truncates a category breadcrumb path from the left, preserving a clean
+ * separator boundary when possible.
+ */
+export function truncateCategoryPathLeft(text, maxLen = 38) {
+  if (text.length <= maxLen) return text
+  const trimmed = text.slice(text.length - maxLen)
+  const sepIdx = trimmed.indexOf(' › ')
+  return '…' + (sepIdx !== -1 ? trimmed.slice(sepIdx) : trimmed)
+}
+
+/**
+ * Full rarity display string, appending "(희귀)" for achievements below 5%.
+ */
+export function rarityText(rarity) {
+  return rarity < 5 ? `${rarity}% (희귀)` : `${rarity}%`
+}

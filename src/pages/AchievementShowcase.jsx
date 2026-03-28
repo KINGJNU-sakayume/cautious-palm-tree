@@ -3,7 +3,7 @@ import { useApp } from '@/context/AppContext.jsx'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import AchievementListItem from '@/components/AchievementListItem.jsx'
 import ProgressBar from '@/components/ProgressBar.jsx'
-import { formatDate, conditionSummaryText, tierLabel } from '@/utils/formatters.js'
+import { formatDate, conditionSummaryText, tierLabel, achievementStatusText, rarityText } from '@/utils/formatters.js'
 import { getCategoryPath } from '@/utils/categoryTree.js'
 
 const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'red_diamond']
@@ -126,13 +126,13 @@ function DetailPanel({ achievement, onClose }) {
         <div className="flex justify-between">
           <span className="text-slate-500">희귀도</span>
           <span className={`font-semibold ${achievement.rarity < 5 ? 'text-amber-500' : ''}`}>
-            {achievement.rarity}% {achievement.rarity < 5 ? '(희귀)' : ''}
+            {rarityText(achievement.rarity)}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">상태</span>
           <span className={`font-semibold ${achievement.isEarned ? 'text-green-500' : 'text-slate-400'}`}>
-            {achievement.isEarned ? '✓ 획득' : '🔒 잠김'}
+            {achievementStatusText(achievement.isEarned)}
           </span>
         </div>
         {achievement.isEarned && achievement.earnedAt && (
@@ -145,7 +145,7 @@ function DetailPanel({ achievement, onClose }) {
           <div>
             <span className="text-slate-500 block mb-1.5">조건</span>
             <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 font-medium">
-              {conditionSummaryText(achievement.condition)}
+              {conditionSummaryText(achievement.condition, achievement.progress)}
             </div>
           </div>
         )}

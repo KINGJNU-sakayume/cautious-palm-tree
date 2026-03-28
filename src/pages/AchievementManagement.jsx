@@ -4,7 +4,7 @@ import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import CategoryTreeSelector from '@/components/CategoryTreeSelector.jsx'
 import ConditionBuilder from '@/components/ConditionBuilder.jsx'
 import { getCategoryPath } from '@/utils/categoryTree.js'
-import { conditionSummaryText, typeLabel, tierLabel, generateId } from '@/utils/formatters.js'
+import { conditionSummaryText, typeLabel, tierLabel, generateId, achievementStatusText, truncateCategoryPathLeft } from '@/utils/formatters.js'
 
 const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'red_diamond']
 const TYPES = ['one-time', 'repeatable', 'meta']
@@ -81,12 +81,6 @@ export default function AchievementManagement() {
     return getCategoryPath(catId, categories).map(c => c.name).join(' › ')
   }
 
-  const truncateCategoryLeft = (text, maxLen = 38) => {
-    if (text.length <= maxLen) return text;
-    const trimmed = text.slice(text.length - maxLen);
-    const sepIdx = trimmed.indexOf(' › ');
-    return '…' + (sepIdx !== -1 ? trimmed.slice(sepIdx) : trimmed);
-  }
 
   return (
     <div className="flex h-full min-h-0">
@@ -183,7 +177,7 @@ export default function AchievementManagement() {
                   <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
                     {/* FIX: removed hard-coded max-w-[140px]; truncate defers to column width */}
                     <span className="text-xs text-slate-400 block w-full overflow-hidden whitespace-nowrap" title={getCategoryPathLabel(a.categoryId)}>
-                      {truncateCategoryLeft(getCategoryPathLabel(a.categoryId))}
+                      {truncateCategoryPathLeft(getCategoryPathLabel(a.categoryId))}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
@@ -193,10 +187,9 @@ export default function AchievementManagement() {
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
-                    {a.isEarned
-                      ? <span className="text-green-500 font-semibold text-xs">획득 ✓</span>
-                      : <span className="text-slate-400 text-xs">잠김</span>
-                    }
+                    <span className={`font-semibold text-xs ${a.isEarned ? 'text-green-500' : 'text-slate-400'}`}>
+                      {achievementStatusText(a.isEarned)}
+                    </span>
                   </td>
                 </tr>
               ))}
