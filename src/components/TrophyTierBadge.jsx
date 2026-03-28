@@ -38,12 +38,12 @@ const TIER_STYLES = {
     glow: 'animate-glow-diamond',
     special: '',
   },
-  red_diamond: {
-    bg: 'bg-[#CC4204]',
-    text: 'text-white',
-    border: 'border-[#CC4204]',
-    glow: 'animate-glow-red-diamond',
-    special: '',
+  legendary: {
+    bg: '',
+    text: '',
+    border: '',
+    glow: '',
+    special: 'tier-badge-legendary',
   },
 }
 

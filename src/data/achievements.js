@@ -97,7 +97,7 @@ export const achievements = [
     title: '미지의 거리',
     description: '가장 헌신적인 러너들을 위한 비밀 업적.',
     categoryId: 'cat-running',
-    tier: 'red_diamond',
+    tier: 'legendary',
     type: 'one-time',
     condition: { type: 'cumulative', target: 1000, unit: 'km' },
     rarity: 0.3,

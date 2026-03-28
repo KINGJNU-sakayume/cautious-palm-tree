@@ -6,7 +6,7 @@ import ProgressBar from '@/components/ProgressBar.jsx'
 import { formatDate, conditionSummaryText, tierLabel, achievementStatusText, rarityText } from '@/utils/formatters.js'
 import { getCategoryPath } from '@/utils/categoryTree.js'
 
-const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'red_diamond']
+const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary']
 
 function computeStreak(records) {
   const dateset = new Set(records.map(r => r.date))
@@ -29,7 +29,7 @@ function computeStreak(records) {
 
 function HighTierDisplayCase({ achievements }) {
   const highTierEarned = achievements.filter(
-    a => (a.tier === 'red_diamond' || a.tier === 'diamond') && a.isEarned
+    a => (a.tier === 'legendary' || a.tier === 'diamond') && a.isEarned
   )
 
   if (highTierEarned.length === 0) {
@@ -59,7 +59,7 @@ function HighTierDisplayCase({ achievements }) {
           위대한 도전을 시작하세요!
         </p>
         <p className="text-xs text-slate-400 max-w-xs">
-          다이아몬드 및 레드 다이아몬드 업적을 획득하면 이곳에 전시됩니다.
+          다이아몬드 및 레전더리 업적을 획득하면 이곳에 전시됩니다.
         </p>
       </div>
     )
@@ -75,21 +75,21 @@ function HighTierDisplayCase({ achievements }) {
       </div>
       <div className="flex gap-3 flex-wrap">
         {highTierEarned.map(a => {
-          const isRed = a.tier === 'red_diamond'
+          const isLegendary = a.tier === 'legendary'
           return (
             <div
               key={a.id}
               className={[
                 'flex flex-col gap-2 rounded-xl px-4 py-3 min-w-36 flex-1',
-                isRed
-                  ? 'bg-gradient-to-br from-red-950 to-orange-900 ring-1 ring-red-500/40'
+                isLegendary
+                  ? 'bg-gradient-to-br from-[#1a1540] to-[#2d2870] ring-1 ring-[#7F77DD]/40'
                   : 'bg-gradient-to-br from-cyan-950 to-slate-900 ring-1 ring-cyan-500/40',
               ].join(' ')}
             >
               <TrophyTierBadge tier={a.tier} size="sm" />
               <p className="text-sm font-bold text-white leading-snug">{a.title}</p>
               {a.earnedAt && (
-                <p className={`text-xs font-medium ${isRed ? 'text-red-300' : 'text-cyan-300'}`}>
+                <p className={`text-xs font-medium ${isLegendary ? 'text-[#CECBF6]' : 'text-cyan-300'}`}>
                   {formatDate(a.earnedAt)}
                 </p>
               )}

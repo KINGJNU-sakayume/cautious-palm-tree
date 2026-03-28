@@ -8,7 +8,7 @@ const TIER_BORDER_COLORS = {
   gold: '#f59e0b',
   platinum: '#6366f1',
   diamond: '#06b6d4',
-  red_diamond: '#CC4204',
+  legendary: '#7F77DD',
 }
 
 export default function UnlockLogCard({ achievement }) {
