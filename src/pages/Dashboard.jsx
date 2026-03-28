@@ -191,7 +191,7 @@ export default function Dashboard() {
                   className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark active:scale-95 transition-all shadow-sm mt-1"
                 >
                   <span className="text-base leading-none">+</span>
-                  <span>Quick Log</span>
+                  <span>기록추가</span>
                 </button>
               </div>
 
@@ -237,7 +237,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <p className="text-sm text-slate-400 py-6 text-center bg-white border border-slate-100 rounded-xl">
-                      아직 기록이 없습니다. Quick Log로 첫 기록을 추가해보세요!
+                      아직 기록이 없습니다. 기록추가로 첫 기록을 추가해보세요!
                     </p>
                   )}
                 </section>
@@ -306,32 +306,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Log slide-over */}
+      {/* 기록추가 modal */}
       {quickLogOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30"
-          onClick={() => setQuickLogOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setQuickLogOpen(false) }}
         >
-          <div
-            className="absolute inset-y-0 right-0 w-full max-w-md bg-neutral-50 shadow-xl overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Quick Log</h2>
-                <button
-                  onClick={() => setQuickLogOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  aria-label="닫기"
-                >
-                  <XIcon size={16} />
-                </button>
-              </div>
-              <RecordEditor
-                selectedCategoryId={selectedCategoryId}
-                onClose={() => setQuickLogOpen(false)}
-              />
-            </div>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <RecordEditor
+              selectedCategoryId={selectedCategoryId}
+              onClose={() => setQuickLogOpen(false)}
+            />
           </div>
         </div>
       )}
