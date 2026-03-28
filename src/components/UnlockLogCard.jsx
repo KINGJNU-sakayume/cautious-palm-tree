@@ -1,5 +1,5 @@
 import React from 'react'
-import { formatDate } from '@/utils/formatters.js'
+import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
 
 const TIER_BORDER_COLORS = {
@@ -13,6 +13,7 @@ const TIER_BORDER_COLORS = {
 
 export default function UnlockLogCard({ achievement }) {
   const borderColor = TIER_BORDER_COLORS[achievement.tier] || '#0066FF'
+  const conditionText = achievement.condition ? conditionSummaryText(achievement.condition) : null
 
   return (
     <div
@@ -30,6 +31,14 @@ export default function UnlockLogCard({ achievement }) {
           <TrophyTierBadge tier={achievement.tier} size="xs" />
         </div>
         <div className="text-sm font-bold text-slate-800 truncate">{achievement.title}</div>
+
+        {/* Unlock condition — one-line summary */}
+        {conditionText && (
+          <div className="text-xs text-slate-500 mt-0.5 truncate" title={conditionText}>
+            {conditionText}
+          </div>
+        )}
+
         {achievement.earnedAt && (
           <div className="text-xs text-slate-400 mt-0.5">{formatDate(achievement.earnedAt)}</div>
         )}
