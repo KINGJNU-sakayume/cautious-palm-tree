@@ -7,10 +7,10 @@ import AchievementShowcase from './pages/AchievementShowcase.jsx'
 import ToastStack from './components/ToastStack.jsx'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: '🗂️' },
-  { to: '/records', label: 'Record Hub', icon: '📋' },
-  { to: '/achievements', label: 'Achievements', icon: '⚙️' },
-  { to: '/showcase', label: 'Showcase', icon: '🏆' },
+  { to: '/', label: '대시보드', icon: '🗂️' },
+  { to: '/records', label: '기록 허브', icon: '📋' },
+  { to: '/achievements', label: '업적', icon: '⚙️' },
+  { to: '/showcase', label: '쇼케이스', icon: '🏆' },
 ]
 
 function NavBar() {
@@ -19,7 +19,7 @@ function NavBar() {
       {/* Logo */}
       <div className="flex items-center gap-1.5 mr-6">
         <span className="text-base">🏆</span>
-        <span className="font-extrabold text-slate-900 text-sm">AchievementLib</span>
+        <span className="font-extrabold text-slate-900 text-sm">업적 라이브러리</span>
       </div>
 
       {/* Nav links */}

@@ -69,7 +69,7 @@ export default function AchievementManagement() {
 
   const handleDelete = () => {
     if (!selectedId || selectedId === '__new__') return
-    if (window.confirm('Delete this achievement?')) {
+    if (window.confirm('이 업적을 삭제할까요?')) {
       deleteAchievement(selectedId)
       setSelectedId(null)
       setEditForm(null)
@@ -88,12 +88,12 @@ export default function AchievementManagement() {
         {/* Table header + filters */}
         <div className="px-5 py-4 bg-white border-b border-slate-200 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-extrabold text-slate-900">Achievements</h1>
+            <h1 className="text-xl font-extrabold text-slate-900">업적</h1>
             <button
               onClick={openNew}
               className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
             >
-              + New Achievement
+              + 새 업적
             </button>
           </div>
 
@@ -103,7 +103,7 @@ export default function AchievementManagement() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by title…"
+              placeholder="제목으로 검색…"
               className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary flex-1 min-w-32"
             />
             <select
@@ -111,7 +111,7 @@ export default function AchievementManagement() {
               onChange={e => setFilterTier(e.target.value)}
               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
             >
-              <option value="">All Tiers</option>
+              <option value="">모든 티어</option>
               {TIERS.map(t => <option key={t} value={t}>{tierLabel(t)}</option>)}
             </select>
             <select
@@ -119,7 +119,7 @@ export default function AchievementManagement() {
               onChange={e => setFilterType(e.target.value)}
               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
             >
-              <option value="">All Types</option>
+              <option value="">모든 유형</option>
               {TYPES.map(t => <option key={t} value={t}>{typeLabel(t)}</option>)}
             </select>
             <select
@@ -127,9 +127,9 @@ export default function AchievementManagement() {
               onChange={e => setFilterEarned(e.target.value)}
               className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
             >
-              <option value="">All Status</option>
-              <option value="earned">Earned</option>
-              <option value="locked">Locked</option>
+              <option value="">모든 상태</option>
+              <option value="earned">획득</option>
+              <option value="locked">잠김</option>
             </select>
           </div>
         </div>
@@ -139,12 +139,12 @@ export default function AchievementManagement() {
           <table className="w-full text-sm table-fixed">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
               <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">Tier</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Title</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">Type</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-36">Category</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">Condition</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-20">Status</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">티어</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">제목</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">유형</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-36">카테고리</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">조건</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-20">상태</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -165,7 +165,7 @@ export default function AchievementManagement() {
                   <td className="px-4 py-2.5 min-w-0">
                     {/* FIX: removed hard-coded max-w-xs; truncate now clips only when td itself is too narrow */}
                     <span className="font-medium text-slate-800 truncate block w-full">
-                      {a.isHidden && !a.isEarned ? '??? (Hidden)' : a.title}
+                      {a.isHidden && !a.isEarned ? '??? (숨김)' : a.title}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
@@ -187,8 +187,8 @@ export default function AchievementManagement() {
                   </td>
                   <td className="px-4 py-2.5">
                     {a.isEarned
-                      ? <span className="text-green-500 font-semibold text-xs">✓ Earned</span>
-                      : <span className="text-slate-400 text-xs">Locked</span>
+                      ? <span className="text-green-500 font-semibold text-xs">✓ 획득</span>
+                      : <span className="text-slate-400 text-xs">잠김</span>
                     }
                   </td>
                 </tr>
@@ -196,7 +196,7 @@ export default function AchievementManagement() {
               {filteredAchievements.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
-                    No achievements found
+                    업적이 없습니다
                   </td>
                 </tr>
               )}
@@ -211,7 +211,7 @@ export default function AchievementManagement() {
           <div className="px-6 py-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">
-                {selectedId === '__new__' ? 'New Achievement' : 'Edit Achievement'}
+                {selectedId === '__new__' ? '새 업적' : '업적 편집'}
               </h2>
               <button
                 onClick={() => { setSelectedId(null); setEditForm(null) }}
@@ -223,31 +223,31 @@ export default function AchievementManagement() {
 
             {/* Title */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Title</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">제목</label>
               <input
                 type="text"
                 value={editForm.title}
                 onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                placeholder="Achievement title…"
+                placeholder="업적 제목…"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Description</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">설명</label>
               <textarea
                 value={editForm.description}
                 onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                 rows={2}
-                placeholder="What does this achievement mean?"
+                placeholder="이 업적의 의미는 무엇인가요?"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary resize-none"
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Category</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">카테고리</label>
               <CategoryTreeSelector
                 value={editForm.categoryId}
                 onChange={id => setEditForm({ ...editForm, categoryId: id })}
@@ -257,7 +257,7 @@ export default function AchievementManagement() {
             {/* Tier + Type row */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Tier</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">티어</label>
                 <select
                   value={editForm.tier}
                   onChange={e => setEditForm({ ...editForm, tier: e.target.value })}
@@ -267,7 +267,7 @@ export default function AchievementManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Type</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">유형</label>
                 <select
                   value={editForm.type}
                   onChange={e => setEditForm({ ...editForm, type: e.target.value, condition: { type: 'action' } })}
@@ -281,7 +281,7 @@ export default function AchievementManagement() {
             {/* Rarity + Hidden */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Rarity (%)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">희귀도 (%)</label>
                 <input
                   type="number"
                   min={0}
@@ -293,7 +293,7 @@ export default function AchievementManagement() {
                 />
               </div>
               <div className="flex flex-col justify-center">
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Hidden</label>
+                <label className="text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">숨김</label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
                     onClick={() => setEditForm({ ...editForm, isHidden: !editForm.isHidden })}
@@ -309,14 +309,14 @@ export default function AchievementManagement() {
                       ].join(' ')}
                     />
                   </div>
-                  <span className="text-sm text-slate-600">{editForm.isHidden ? 'Hidden' : 'Visible'}</span>
+                  <span className="text-sm text-slate-600">{editForm.isHidden ? '숨김' : '공개'}</span>
                 </label>
               </div>
             </div>
 
             {/* Condition builder */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Condition</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">조건</label>
               <ConditionBuilder
                 type={editForm.type}
                 value={editForm.condition}
@@ -330,14 +330,14 @@ export default function AchievementManagement() {
                 onClick={handleSave}
                 className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
               >
-                Save
+                저장
               </button>
               {selectedId !== '__new__' && (
                 <button
                   onClick={handleDelete}
                   className="px-4 py-2.5 text-red-600 border border-red-200 rounded-lg text-sm font-semibold hover:bg-red-50 transition-colors"
                 >
-                  Delete
+                  삭제
                 </button>
               )}
             </div>
@@ -345,8 +345,8 @@ export default function AchievementManagement() {
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6">
             <span className="text-5xl mb-4">🏆</span>
-            <p className="text-base font-semibold text-center">Select an achievement to edit</p>
-            <p className="text-sm mt-1 text-center">Or click "New Achievement" to create one</p>
+            <p className="text-base font-semibold text-center">편집할 업적을 선택하세요</p>
+            <p className="text-sm mt-1 text-center">또는 "새 업적"을 클릭하여 생성하세요</p>
           </div>
         )}
       </div>

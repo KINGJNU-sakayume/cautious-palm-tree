@@ -4,12 +4,12 @@ import { useToast } from '@/context/ToastContext.jsx'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
 
 const TIER_SUBTEXT = {
-  red_diamond: 'Exceptional achievement earned!',
-  diamond: 'Exceptional achievement earned!',
-  platinum: 'Rare milestone reached!',
-  gold: 'Rare milestone reached!',
-  silver: 'New achievement unlocked!',
-  bronze: 'New achievement unlocked!',
+  red_diamond: '탁월한 업적을 달성했습니다!',
+  diamond: '탁월한 업적을 달성했습니다!',
+  platinum: '희귀한 마일스톤에 도달했습니다!',
+  gold: '희귀한 마일스톤에 도달했습니다!',
+  silver: '새로운 업적을 달성했습니다!',
+  bronze: '새로운 업적을 달성했습니다!',
 }
 
 export default function ToastNotification({ toast }) {
@@ -50,7 +50,7 @@ export default function ToastNotification({ toast }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-            Achievement Unlocked
+            업적 달성
           </span>
           <TrophyTierBadge tier={achievement.tier} size="xs" />
         </div>
@@ -58,7 +58,7 @@ export default function ToastNotification({ toast }) {
           {achievement.title}
         </div>
         <div className="text-xs text-slate-500">
-          {TIER_SUBTEXT[achievement.tier] || 'New achievement unlocked!'}
+          {TIER_SUBTEXT[achievement.tier] || '새로운 업적을 달성했습니다!'}
         </div>
       </div>
 

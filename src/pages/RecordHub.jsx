@@ -89,11 +89,11 @@ export default function RecordHub() {
         {/* Panel header — always visible */}
         <div className="flex items-center justify-between px-3 pt-4 pb-2">
           {calendarOpen && (
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Calendar</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">캘린더</h2>
           )}
           <button
             onClick={() => setCalendarOpen(v => !v)}
-            title={calendarOpen ? 'Collapse calendar' : 'Expand calendar'}
+            title={calendarOpen ? '캘린더 접기' : '캘린더 펼치기'}
             className={[
               'flex items-center justify-center w-6 h-6 rounded-md text-slate-400',
               'hover:bg-slate-100 hover:text-slate-600 transition-colors flex-shrink-0',
@@ -114,7 +114,7 @@ export default function RecordHub() {
             />
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-              <span>Has records</span>
+              <span>기록 있음</span>
             </div>
           </div>
         )}
@@ -124,8 +124,8 @@ export default function RecordHub() {
       <div ref={feedRef} className="flex-1 min-w-0 h-full overflow-y-auto bg-[#F8FAFC] scrollbar-thin">
         <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-extrabold text-slate-900">Record Hub</h1>
-            <span className="text-sm text-slate-400">{filteredEntries.length} entries</span>
+            <h1 className="text-2xl font-extrabold text-slate-900">기록 허브</h1>
+            <span className="text-sm text-slate-400">{filteredEntries.length}개 항목</span>
           </div>
 
           {/* Filter bar */}
@@ -146,7 +146,7 @@ export default function RecordHub() {
                   <h3 className="text-sm font-bold text-slate-700">{formatDate(date)}</h3>
                   <div className="flex-1 border-t border-slate-200" />
                   <span className="text-xs text-slate-400">
-                    {entries.length} item{entries.length !== 1 ? 's' : ''}
+                    {entries.length}개 항목
                   </span>
                 </div>
 
@@ -163,8 +163,8 @@ export default function RecordHub() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
               <span className="text-5xl mb-4">📭</span>
-              <p className="text-lg font-semibold">No entries found</p>
-              <p className="text-sm mt-1">Try adjusting your filters</p>
+              <p className="text-lg font-semibold">항목이 없습니다</p>
+              <p className="text-sm mt-1">필터를 조정해 보세요</p>
             </div>
           )}
         </div>

@@ -64,13 +64,13 @@ export default function RecordEditor({ selectedCategoryId }) {
 
   return (
     <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl shadow-card p-5 space-y-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Log a Record</h3>
+      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">기록 추가</h3>
 
       {/* Category display */}
       {!isLeaf && children.length > 0 && (
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-            Save to subcategory
+            하위 카테고리에 저장
           </label>
           <div className="flex flex-wrap gap-2">
             {children.map(child => (
@@ -105,7 +105,7 @@ export default function RecordEditor({ selectedCategoryId }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-            Date <span className="text-red-400">*</span>
+            날짜 <span className="text-red-400">*</span>
           </label>
           <input
             type="date"
@@ -117,7 +117,7 @@ export default function RecordEditor({ selectedCategoryId }) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-            Value
+            값
           </label>
           <input
             type="number"
@@ -130,13 +130,13 @@ export default function RecordEditor({ selectedCategoryId }) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-            Unit
+            단위
           </label>
           <input
             type="text"
             value={unit}
             onChange={e => setUnit(e.target.value)}
-            placeholder="km, kg, min…"
+            placeholder="km, kg, 분…"
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -145,13 +145,13 @@ export default function RecordEditor({ selectedCategoryId }) {
       {/* Memo */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-          Memo
+          메모
         </label>
         <textarea
           value={memo}
           onChange={e => setMemo(e.target.value)}
           rows={2}
-          placeholder="Notes about this session…"
+          placeholder="이번 세션에 대한 메모…"
           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors resize-none"
         />
       </div>
@@ -159,7 +159,7 @@ export default function RecordEditor({ selectedCategoryId }) {
       {/* Photo URL */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-          Photo URL
+          사진 URL
         </label>
         <input
           type="url"
@@ -182,13 +182,13 @@ export default function RecordEditor({ selectedCategoryId }) {
               : 'bg-primary text-white hover:bg-primary-dark active:scale-95',
           ].join(' ')}
         >
-          {saving ? 'Saving…' : 'Save Record'}
+          {saving ? '저장 중…' : '기록 저장'}
         </button>
         {saved && (
-          <span className="text-sm text-green-600 font-medium animate-fade-in">✓ Saved!</span>
+          <span className="text-sm text-green-600 font-medium animate-fade-in">✓ 저장됨!</span>
         )}
         {!effectiveCategoryId && !isLeaf && (
-          <span className="text-xs text-slate-400">Select a subcategory first</span>
+          <span className="text-xs text-slate-400">먼저 하위 카테고리를 선택하세요</span>
         )}
       </div>
     </form>

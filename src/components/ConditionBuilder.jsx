@@ -3,17 +3,17 @@ import CategoryTreeSelector from './CategoryTreeSelector.jsx'
 import { useApp } from '@/context/AppContext.jsx'
 
 const CONDITION_TYPES = [
-  { value: 'action', label: 'Action (1 record)' },
-  { value: 'count', label: 'Count' },
-  { value: 'cumulative', label: 'Cumulative' },
-  { value: 'single', label: 'Single Value' },
-  { value: 'streak', label: 'Streak' },
+  { value: 'action', label: '행동 (기록 1회)' },
+  { value: 'count', label: '횟수' },
+  { value: 'cumulative', label: '누적' },
+  { value: 'single', label: '단일 값' },
+  { value: 'streak', label: '연속' },
 ]
 
 const META_TYPES = [
-  { value: 'meta_count', label: 'Achievement Count in Category' },
-  { value: 'meta_list', label: 'Specific Achievement List' },
-  { value: 'meta_clear', label: 'Clear All in Category' },
+  { value: 'meta_count', label: '카테고리 내 업적 수' },
+  { value: 'meta_list', label: '특정 업적 목록' },
+  { value: 'meta_clear', label: '카테고리 전체 달성' },
 ]
 
 function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
@@ -43,12 +43,12 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
       </div>
 
       {condition.type === 'action' && (
-        <p className="text-xs text-slate-500">At least 1 record exists in this category</p>
+        <p className="text-xs text-slate-500">이 카테고리에 기록이 1개 이상 있어야 합니다</p>
       )}
 
       {condition.type === 'count' && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">Target</label>
+          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
           <input
             type="number"
             min={1}
@@ -57,13 +57,13 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
             placeholder="10"
             className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
           />
-          <span className="text-xs text-slate-400">records</span>
+          <span className="text-xs text-slate-400">회</span>
         </div>
       )}
 
       {(condition.type === 'cumulative' || condition.type === 'single') && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">Target</label>
+          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
           <input
             type="number"
             min={0}
@@ -85,7 +85,7 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
 
       {condition.type === 'streak' && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">Target</label>
+          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
           <input
             type="number"
             min={1}
@@ -94,7 +94,7 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
             placeholder="7"
             className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
           />
-          <span className="text-xs text-slate-400">consecutive days</span>
+          <span className="text-xs text-slate-400">연속일</span>
         </div>
       )}
     </div>
@@ -131,14 +131,14 @@ function MetaConditionBuilder({ condition, onChange }) {
 
       {(condition.type === 'meta_count' || condition.type === 'meta_clear') && (
         <div className="space-y-2">
-          <label className="text-xs text-slate-500 font-medium">Category</label>
+          <label className="text-xs text-slate-500 font-medium">카테고리</label>
           <CategoryTreeSelector
             value={condition.categoryId || null}
             onChange={id => update('categoryId', id)}
           />
           {condition.type === 'meta_count' && (
             <div className="flex items-center gap-2 mt-2">
-              <label className="text-xs text-slate-500 w-16">Target</label>
+              <label className="text-xs text-slate-500 w-16">목표</label>
               <input
                 type="number"
                 min={1}
@@ -147,7 +147,7 @@ function MetaConditionBuilder({ condition, onChange }) {
                 placeholder="5"
                 className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
               />
-              <span className="text-xs text-slate-400">achievements earned</span>
+              <span className="text-xs text-slate-400">업적 획득</span>
             </div>
           )}
         </div>
@@ -155,7 +155,7 @@ function MetaConditionBuilder({ condition, onChange }) {
 
       {condition.type === 'meta_list' && (
         <div className="space-y-2">
-          <label className="text-xs text-slate-500 font-medium">Required Achievements</label>
+          <label className="text-xs text-slate-500 font-medium">필요 업적</label>
           {/* Tag chips for selected */}
           {(condition.achievementIds || []).length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -183,7 +183,7 @@ function MetaConditionBuilder({ condition, onChange }) {
             type="text"
             value={achSearch}
             onChange={e => setAchSearch(e.target.value)}
-            placeholder="Search achievements…"
+            placeholder="업적 검색…"
             className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
           />
           <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
@@ -294,7 +294,7 @@ export default function ConditionBuilder({ type, value, onChange }) {
         onClick={addBlock}
         className="w-full px-3 py-2 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary hover:text-primary transition-colors"
       >
-        + Add Condition
+        + 조건 추가
       </button>
     </div>
   )

@@ -45,7 +45,7 @@ function ChildCategoryGroup({ category, achievements, records }) {
           <span className="font-semibold text-sm text-slate-700">{category.name}</span>
         </div>
         <span className="text-xs text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full font-medium">
-          {earned} / {total} earned
+          {earned} / {total} 획득
         </span>
       </button>
 
@@ -122,25 +122,25 @@ export default function Dashboard() {
               {/* Summary stat cards */}
               <div className="grid grid-cols-4 gap-3">
                 <SummaryStatCard
-                  label="Records"
+                  label="기록"
                   value={categoryRecords.length}
                   icon="📋"
                   accent="#0066FF"
                 />
                 <SummaryStatCard
-                  label="Achievements"
+                  label="업적"
                   value={`${earnedAchievements.length} / ${categoryAchievements.length}`}
                   icon="🏆"
                   accent="#f59e0b"
                 />
                 <SummaryStatCard
-                  label="Current Streak"
+                  label="현재 연속"
                   value={`${streak}d`}
                   icon="🔥"
                   accent={streak >= 7 ? '#CC4204' : '#5B75BA'}
                 />
                 <SummaryStatCard
-                  label="Latest Record"
+                  label="최근 기록"
                   value={latestRecord ? formatDate(latestRecord.date) : '—'}
                   icon="📅"
                 />
@@ -153,7 +153,7 @@ export default function Dashboard() {
               {recentRecords.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    Recent Records
+                    최근 기록
                   </h2>
                   <div className="space-y-2">
                     {recentRecords.map(r => (
@@ -167,7 +167,7 @@ export default function Dashboard() {
               {earnedAchievements.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    Earned ({earnedAchievements.length})
+                    획득 ({earnedAchievements.length})
                   </h2>
                   <div className="grid grid-cols-2 gap-3">
                     {earnedAchievements.map(a => (
@@ -181,7 +181,7 @@ export default function Dashboard() {
               {inProgressAchievements.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    In Progress / Locked ({inProgressAchievements.length})
+                    진행 중 / 잠김 ({inProgressAchievements.length})
                   </h2>
                   <div className="grid grid-cols-2 gap-3">
                     {inProgressAchievements.map(a => (
@@ -195,7 +195,7 @@ export default function Dashboard() {
               {directChildren.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    Subcategories
+                    하위 카테고리
                   </h2>
                   <div className="space-y-3">
                     {directChildren.map(child => (
@@ -213,8 +213,8 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
               <span className="text-5xl mb-4">📁</span>
-              <p className="text-lg font-semibold">Select a category to get started</p>
-              <p className="text-sm mt-1">Or create a new one using the sidebar</p>
+              <p className="text-lg font-semibold">시작할 카테고리를 선택하세요</p>
+              <p className="text-sm mt-1">또는 사이드바에서 새로 만드세요</p>
             </div>
           )}
         </div>

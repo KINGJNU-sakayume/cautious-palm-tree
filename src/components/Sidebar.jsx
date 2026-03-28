@@ -7,7 +7,7 @@ export default function Sidebar({ selectedCategoryId, onSelectCategory }) {
   const [search, setSearch] = useState('')
 
   const handleAddRoot = () => {
-    addCategory({ name: 'New Category', parentId: null })
+    addCategory({ name: '새 카테고리', parentId: null })
   }
 
   return (
@@ -17,8 +17,8 @@ export default function Sidebar({ selectedCategoryId, onSelectCategory }) {
         <div className="flex items-center gap-2.5">
           <span className="text-xl">🏆</span>
           <div>
-            <div className="text-base font-black text-slate-900 leading-none">Achievement</div>
-            <div className="text-base font-black text-primary leading-none">Library</div>
+            <div className="text-base font-black text-slate-900 leading-none">업적</div>
+            <div className="text-base font-black text-primary leading-none">라이브러리</div>
           </div>
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function Sidebar({ selectedCategoryId, onSelectCategory }) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search categories…"
+            placeholder="카테고리 검색…"
             className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -52,7 +52,7 @@ export default function Sidebar({ selectedCategoryId, onSelectCategory }) {
           onClick={handleAddRoot}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-primary hover:text-primary transition-colors"
         >
-          <span>+</span> Add Category
+          <span>+</span> 카테고리 추가
         </button>
       </div>
     </div>
