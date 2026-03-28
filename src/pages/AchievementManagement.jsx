@@ -81,6 +81,13 @@ export default function AchievementManagement() {
     return getCategoryPath(catId, categories).map(c => c.name).join(' › ')
   }
 
+  const truncateCategoryLeft = (text, maxLen = 38) => {
+    if (text.length <= maxLen) return text;
+    const trimmed = text.slice(text.length - maxLen);
+    const sepIdx = trimmed.indexOf(' › ');
+    return '…' + (sepIdx !== -1 ? trimmed.slice(sepIdx) : trimmed);
+  }
+
   return (
     <div className="flex h-full min-h-0">
       {/* Left: Achievement table (60%) */}
@@ -139,10 +146,10 @@ export default function AchievementManagement() {
           <table className="w-full text-sm table-fixed">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
               <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">티어</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-32">티어</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">제목</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-24">유형</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-36">카테고리</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-28">유형</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-48">카테고리</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">조건</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-20">상태</th>
               </tr>
@@ -175,8 +182,8 @@ export default function AchievementManagement() {
                   </td>
                   <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
                     {/* FIX: removed hard-coded max-w-[140px]; truncate defers to column width */}
-                    <span className="text-xs text-slate-400 truncate block w-full">
-                      {getCategoryPathLabel(a.categoryId)}
+                    <span className="text-xs text-slate-400 block w-full overflow-hidden whitespace-nowrap" title={getCategoryPathLabel(a.categoryId)}>
+                      {truncateCategoryLeft(getCategoryPathLabel(a.categoryId))}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
@@ -187,7 +194,7 @@ export default function AchievementManagement() {
                   </td>
                   <td className="px-4 py-2.5">
                     {a.isEarned
-                      ? <span className="text-green-500 font-semibold text-xs">✓ 획득</span>
+                      ? <span className="text-green-500 font-semibold text-xs">획득 ✓</span>
                       : <span className="text-slate-400 text-xs">잠김</span>
                     }
                   </td>
