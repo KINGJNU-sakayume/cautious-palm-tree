@@ -83,9 +83,14 @@ export default function AchievementManagement() {
 
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Left: Achievement table (60%) */}
-      <div className="flex-[3] min-w-0 h-full overflow-hidden flex flex-col border-r border-slate-200">
+    <div className="flex flex-col md:flex-row h-full min-h-0">
+      {/* Left: Achievement table (60%) — hidden on mobile when edit panel is open */}
+      <div className={[
+        'min-w-0 overflow-hidden flex flex-col border-slate-200',
+        editForm
+          ? 'hidden md:flex md:flex-[3] md:border-r'
+          : 'flex flex-1 md:flex-[3] md:border-r',
+      ].join(' ')}>
         {/* Table header + filters */}
         <div className="px-5 py-4 bg-white border-b border-slate-200 space-y-3">
           <div className="flex items-center justify-between">
@@ -205,17 +210,28 @@ export default function AchievementManagement() {
         </div>
       </div>
 
-      {/* Right: Edit panel (40%) */}
-      <div className="flex-[2] min-w-0 h-full overflow-y-auto bg-white scrollbar-thin">
+      {/* Right: Edit panel (40%) — full-width on mobile when open */}
+      <div className={[
+        'min-w-0 overflow-y-auto bg-white scrollbar-thin',
+        editForm ? 'flex flex-col flex-1 md:flex-[2]' : 'hidden md:flex md:flex-[2]',
+      ].join(' ')}>
         {editForm ? (
           <div className="px-6 py-6 space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">
-                {selectedId === '__new__' ? '새 업적' : '업적 편집'}
-              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setSelectedId(null); setEditForm(null) }}
+                  className="md:hidden text-slate-500 hover:text-slate-800 text-sm font-medium flex items-center gap-1"
+                >
+                  ◀ 목록
+                </button>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {selectedId === '__new__' ? '새 업적' : '업적 편집'}
+                </h2>
+              </div>
               <button
                 onClick={() => { setSelectedId(null); setEditForm(null) }}
-                className="text-slate-400 hover:text-slate-700 text-lg"
+                className="hidden md:block text-slate-400 hover:text-slate-700 text-lg"
               >
                 ✕
               </button>

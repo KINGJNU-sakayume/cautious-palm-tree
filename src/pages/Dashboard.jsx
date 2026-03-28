@@ -65,6 +65,7 @@ export default function Dashboard() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     categories.find(c => c.parentId === null)?.id || null
   )
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const selectedCategory = categories.find(c => c.id === selectedCategoryId)
   const breadcrumb = selectedCategoryId
@@ -100,17 +101,41 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full min-h-0">
-      {/* Sidebar */}
-      <div className="w-56 flex-shrink-0 h-full overflow-hidden">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — always visible on md+, drawer on mobile */}
+      <div
+        className={[
+          'flex-shrink-0 h-full overflow-hidden z-30 transition-transform duration-300',
+          'fixed md:static top-0 left-0 bottom-0',
+          'w-56',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        ].join(' ')}
+      >
         <Sidebar
           selectedCategoryId={selectedCategoryId}
-          onSelectCategory={setSelectedCategoryId}
+          onSelectCategory={(id) => { setSelectedCategoryId(id); setSidebarOpen(false) }}
         />
       </div>
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto bg-neutral-50 scrollbar-thin">
         <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+          {/* Mobile sidebar toggle */}
+          <button
+            className="md:hidden flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 -mt-2 -ml-1 mb-0 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors self-start"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <span className="text-lg">☰</span>
+            <span>카테고리</span>
+          </button>
+
           {/* Header */}
           {selectedCategory ? (
             <>
@@ -120,7 +145,7 @@ export default function Dashboard() {
               </div>
 
               {/* Summary stat cards */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <SummaryStatCard
                   label="기록"
                   value={categoryRecords.length}
@@ -169,7 +194,7 @@ export default function Dashboard() {
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
                     획득 ({earnedAchievements.length})
                   </h2>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {earnedAchievements.map(a => (
                       <AchievementCard key={a.id} achievement={a} />
                     ))}
@@ -183,7 +208,7 @@ export default function Dashboard() {
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
                     진행 중 / 잠김 ({inProgressAchievements.length})
                   </h2>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {inProgressAchievements.map(a => (
                       <AchievementCard key={a.id} achievement={a} />
                     ))}
