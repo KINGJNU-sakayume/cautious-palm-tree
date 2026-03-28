@@ -8,6 +8,8 @@ const CONDITION_TYPES = [
   { value: 'cumulative', label: '누적' },
   { value: 'single', label: '단일 값' },
   { value: 'streak', label: '연속' },
+  { value: 'tag_match', label: '태그 일치' },
+  { value: 'tag_count', label: '태그 횟수' },
 ]
 
 const META_TYPES = [
@@ -95,6 +97,41 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
             className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
           />
           <span className="text-xs text-slate-400">연속일</span>
+        </div>
+      )}
+
+      {condition.type === 'tag_match' && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-slate-500 w-16 flex-shrink-0">태그</label>
+          <input
+            type="text"
+            value={condition.tag || ''}
+            onChange={e => update('tag', e.target.value)}
+            placeholder="예: 야외, 아침"
+            className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+          />
+        </div>
+      )}
+
+      {condition.type === 'tag_count' && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-slate-500 w-16 flex-shrink-0">태그</label>
+          <input
+            type="text"
+            value={condition.tag || ''}
+            onChange={e => update('tag', e.target.value)}
+            placeholder="예: 야외, 아침"
+            className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+          />
+          <input
+            type="number"
+            min={1}
+            value={condition.target || ''}
+            onChange={e => update('target', Number(e.target.value))}
+            placeholder="5"
+            className="w-16 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+          />
+          <span className="text-xs text-slate-400">회</span>
         </div>
       )}
     </div>
