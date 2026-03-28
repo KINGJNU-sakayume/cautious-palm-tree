@@ -2,15 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/context/ToastContext.jsx'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
-
-const TIER_SUBTEXT = {
-  red_diamond: '탁월한 업적을 달성했습니다!',
-  diamond: '탁월한 업적을 달성했습니다!',
-  platinum: '희귀한 마일스톤에 도달했습니다!',
-  gold: '희귀한 마일스톤에 도달했습니다!',
-  silver: '새로운 업적을 달성했습니다!',
-  bronze: '새로운 업적을 달성했습니다!',
-}
+import { tierSubtext } from '@/utils/formatters.js'
 
 export default function ToastNotification({ toast }) {
   const { dismissToast } = useToast()
@@ -58,7 +50,7 @@ export default function ToastNotification({ toast }) {
           {achievement.title}
         </div>
         <div className="text-xs text-slate-500">
-          {TIER_SUBTEXT[achievement.tier] || '새로운 업적을 달성했습니다!'}
+          {tierSubtext(achievement.tier)}
         </div>
       </div>
 
