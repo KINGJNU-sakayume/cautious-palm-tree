@@ -4,9 +4,11 @@ import { useToast } from '@/context/ToastContext.jsx'
 import { todayStr } from '@/utils/formatters.js'
 import { getCategoryPath, getDirectChildren, isLeafCategory } from '@/utils/categoryTree.js'
 
-export default function RecordEditor({ selectedCategoryId, initialRecord = null }) {
-  const { categories, saveRecord } = useApp()
+export default function RecordEditor({ selectedCategoryId, initialRecord = null, onClose, onDelete }) {
+  const { categories, saveRecord, updateRecord } = useApp()
   const { addToasts } = useToast()
+
+  const isEditing = initialRecord != null
 
   const [targetCategoryId, setTargetCategoryId] = useState(selectedCategoryId)
   const [date, setDate] = useState(() => initialRecord?.date ?? todayStr())
@@ -64,11 +66,11 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null 
     if (!effectiveCategoryId) return
 
     setSaving(true)
-    // Simulate brief loading
     await new Promise(r => setTimeout(r, 200))
 
-    saveRecord(
-      {
+    if (isEditing) {
+      await updateRecord({
+        ...initialRecord,
         categoryId: effectiveCategoryId,
         date,
         value: value !== '' ? Number(value) : null,
@@ -76,30 +78,71 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null 
         memo: memo || null,
         photoUrl: photoUrl || null,
         tags,
-      },
-      (unlockedAchievements) => {
-        if (unlockedAchievements.length > 0) {
-          addToasts(unlockedAchievements)
+      })
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => {
+        setSaved(false)
+        onClose?.()
+      }, 800)
+    } else {
+      saveRecord(
+        {
+          categoryId: effectiveCategoryId,
+          date,
+          value: value !== '' ? Number(value) : null,
+          unit: unit || null,
+          memo: memo || null,
+          photoUrl: photoUrl || null,
+          tags,
+        },
+        (unlockedAchievements) => {
+          if (unlockedAchievements.length > 0) {
+            addToasts(unlockedAchievements)
+          }
         }
-      }
-    )
+      )
 
-    // Reset form
-    setValue('')
-    setUnit('')
-    setMemo('')
-    setPhotoUrl('')
-    setDate(todayStr())
-    setTags([])
-    setTagInput('')
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+      // Reset form
+      setValue('')
+      setUnit('')
+      setMemo('')
+      setPhotoUrl('')
+      setDate(todayStr())
+      setTags([])
+      setTagInput('')
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!initialRecord?.id) return
+    if (window.confirm('이 기록을 삭제할까요?')) {
+      await onDelete(initialRecord.id)
+    }
   }
 
   return (
     <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl shadow-card p-5 space-y-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">기록 추가</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+          {isEditing ? '기록 수정 / 삭제' : '기록 추가'}
+        </h3>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            aria-label="닫기"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* Category display */}
       {!isLeaf && children.length > 0 && (
@@ -249,7 +292,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null 
         )}
       </div>
 
-      {/* Save button */}
+      {/* Action buttons */}
       <div className="flex items-center gap-3">
         <button
           type="submit"
@@ -261,8 +304,17 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null 
               : 'bg-primary text-white hover:bg-primary-dark active:scale-95',
           ].join(' ')}
         >
-          {saving ? '저장 중…' : '기록 저장'}
+          {saving ? '저장 중…' : isEditing ? '수정 저장' : '기록 저장'}
         </button>
+        {isEditing && onDelete && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="px-4 py-2.5 rounded-lg font-semibold text-sm border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400 transition-colors active:scale-95"
+          >
+            삭제
+          </button>
+        )}
         {saved && (
           <span className="text-sm text-green-600 font-medium animate-fade-in">✓ 저장됨!</span>
         )}

@@ -139,6 +139,12 @@ export async function upsertRecord(record) {
   if (error) throw error
 }
 
+export async function deleteRecord(id) {
+  requireClient()
+  const { error } = await supabase.from('records').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function bulkUpsertRecords(records) {
   requireClient()
   const { error } = await supabase

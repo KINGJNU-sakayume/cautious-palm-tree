@@ -13,6 +13,7 @@ import {
   upsertCategory,
   deleteCategory as dbDeleteCategory,
   upsertRecord,
+  deleteRecord as dbDeleteRecord,
   upsertAchievement,
   deleteAchievement as dbDeleteAchievement,
   bulkUpsertAchievements,
@@ -32,6 +33,18 @@ function appReducer(state, action) {
     // ── Records ──────────────────────────────────────────────────────────
     case 'ADD_RECORD':
       return { ...state, records: [...state.records, action.record] }
+
+    case 'UPDATE_RECORD':
+      return {
+        ...state,
+        records: state.records.map(r => r.id === action.record.id ? { ...r, ...action.record } : r),
+      }
+
+    case 'DELETE_RECORD':
+      return {
+        ...state,
+        records: state.records.filter(r => r.id !== action.id),
+      }
 
     case 'UPDATE_RECORD_UNLOCKS':
       return {
@@ -348,6 +361,18 @@ export function AppProvider({ children }) {
     return newRecord
   }, [state.records, state.achievements])
 
+  const updateRecord = useCallback(async (recordData) => {
+    dispatch({ type: 'UPDATE_RECORD', record: recordData })
+    try { await upsertRecord(recordData) }
+    catch (err) { console.error('updateRecord DB error:', err) }
+  }, [])
+
+  const deleteRecord = useCallback(async (id) => {
+    dispatch({ type: 'DELETE_RECORD', id })
+    try { await dbDeleteRecord(id) }
+    catch (err) { console.error('deleteRecord DB error:', err) }
+  }, [])
+
   const value = {
     categories: state.categories,
     records: state.records,
@@ -364,8 +389,10 @@ export function AppProvider({ children }) {
     addAchievement,
     updateAchievement,
     deleteAchievement,
-    // Record action
+    // Record actions
     saveRecord,
+    updateRecord,
+    deleteRecord,
     // Raw dispatch for advanced use
     dispatch,
   }

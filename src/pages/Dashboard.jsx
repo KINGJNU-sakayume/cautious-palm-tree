@@ -61,11 +61,12 @@ function ChildCategoryGroup({ category, achievements, records }) {
 }
 
 export default function Dashboard() {
-  const { categories, records, achievements } = useApp()
+  const { categories, records, achievements, deleteRecord } = useApp()
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     categories.find(c => c.parentId === null)?.id || null
   )
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
 
   const selectedCategory = categories.find(c => c.id === selectedCategoryId)
   const breadcrumb = selectedCategoryId
@@ -182,7 +183,7 @@ export default function Dashboard() {
                   </h2>
                   <div className="space-y-2">
                     {recentRecords.map(r => (
-                      <RecordCard key={r.id} record={r} showDate />
+                      <RecordCard key={r.id} record={r} showDate onEdit={setEditingRecord} />
                     ))}
                   </div>
                 </section>
@@ -244,6 +245,23 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Edit record modal */}
+      {editingRecord && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null) }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <RecordEditor
+              selectedCategoryId={editingRecord.categoryId}
+              initialRecord={editingRecord}
+              onClose={() => setEditingRecord(null)}
+              onDelete={async (id) => { await deleteRecord(id); setEditingRecord(null) }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
