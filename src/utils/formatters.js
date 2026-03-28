@@ -175,3 +175,10 @@ export function truncateCategoryPathLeft(text, maxLen = 38) {
 export function rarityText(rarity) {
   return rarity < 5 ? `${rarity}% (희귀)` : `${rarity}%`
 }
+
+/**
+ * Returns the YYYY-MM portion of a YYYY-MM-DD string.
+ */
+export function dateToMonth(dateStr) {
+  return dateStr?.slice(0, 7) ?? ''
+}

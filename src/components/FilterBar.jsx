@@ -32,45 +32,23 @@ export default function FilterBar({ filters, onChange }) {
     })
     .join(', ')
 
-  return (
-    <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-card">
-      {/* Date range */}
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-          시작일
-        </label>
-        <input
-          type="date"
-          value={filters.startDate || ''}
-          onChange={e => onChange({ ...filters, startDate: e.target.value })}
-          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-          종료일
-        </label>
-        <input
-          type="date"
-          value={filters.endDate || ''}
-          onChange={e => onChange({ ...filters, endDate: e.target.value })}
-          className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-        />
-      </div>
+  const isFiltered = (filters.categories || []).length > 0 || filters.type !== 'all'
 
-      {/* Category multi-select */}
+  return (
+    <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-card">
+      {/* Category multi-select pill */}
       <div ref={catDropdownRef} className="relative">
         <button
           type="button"
           onClick={() => setCatDropdownOpen(v => !v)}
-          className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:border-primary transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-full text-sm hover:border-primary transition-colors"
         >
           <span className="text-slate-500">
             {(filters.categories || []).length === 0
-              ? '모든 카테고리'
+              ? '카테고리'
               : selectedCatLabels || `${filters.categories.length}개 선택됨`}
           </span>
-          <span className="text-slate-400">▾</span>
+          <span className="text-slate-400 text-xs">▾</span>
         </button>
 
         {catDropdownOpen && (
@@ -106,8 +84,8 @@ export default function FilterBar({ filters, onChange }) {
         )}
       </div>
 
-      {/* Type toggle */}
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+      {/* Type toggle — right side */}
+      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 ml-auto">
         {['all', 'records', 'achievements'].map(t => (
           <button
             key={t}
@@ -125,14 +103,17 @@ export default function FilterBar({ filters, onChange }) {
         ))}
       </div>
 
-      {/* Reset */}
-      <button
-        type="button"
-        onClick={() => onChange({ startDate: '', endDate: '', categories: [], type: 'all' })}
-        className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-      >
-        초기화
-      </button>
+      {/* Reset — only shown when filters active */}
+      {isFiltered && (
+        <button
+          type="button"
+          onClick={() => onChange({ ...filters, categories: [], type: 'all' })}
+          className="text-xs font-medium transition-colors"
+          style={{ color: '#378ADD', background: 'none', border: 'none', padding: '0 2px' }}
+        >
+          초기화
+        </button>
+      )}
     </div>
   )
 }
