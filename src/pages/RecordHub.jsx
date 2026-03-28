@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
 import Calendar from '@/components/Calendar.jsx'
 import RecordCard from '@/components/RecordCard.jsx'
+import RecordEditor from '@/components/RecordEditor.jsx'
 import UnlockLogCard from '@/components/UnlockLogCard.jsx'
 import FilterBar from '@/components/FilterBar.jsx'
 import { formatDate, todayStr } from '@/utils/formatters.js'
@@ -13,9 +14,10 @@ function getDateMinus(days) {
 }
 
 export default function RecordHub() {
-  const { records, achievements, categories } = useApp()
+  const { records, achievements, categories, deleteRecord } = useApp()
 
   const [calendarOpen, setCalendarOpen] = useState(() => window.innerWidth >= 768)
+  const [editingRecord, setEditingRecord] = useState(null)
 
   const [filters, setFilters] = useState({
     startDate: getDateMinus(30),
@@ -154,7 +156,7 @@ export default function RecordHub() {
                 <div className="space-y-2 pl-1">
                   {entries.map((entry, i) =>
                     entry.kind === 'record'
-                      ? <RecordCard key={`r-${entry.record.id}-${i}`} record={entry.record} />
+                      ? <RecordCard key={`r-${entry.record.id}-${i}`} record={entry.record} onEdit={setEditingRecord} />
                       : <UnlockLogCard key={`a-${entry.achievement.id}-${i}`} achievement={entry.achievement} />
                   )}
                 </div>
@@ -169,6 +171,23 @@ export default function RecordHub() {
           )}
         </div>
       </div>
+
+      {/* Edit record modal */}
+      {editingRecord && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null) }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <RecordEditor
+              selectedCategoryId={editingRecord.categoryId}
+              initialRecord={editingRecord}
+              onClose={() => setEditingRecord(null)}
+              onDelete={async (id) => { await deleteRecord(id); setEditingRecord(null) }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
