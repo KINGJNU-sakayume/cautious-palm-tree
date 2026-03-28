@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
 import Sidebar from '@/components/Sidebar.jsx'
 import SummaryStatCard from '@/components/SummaryStatCard.jsx'
@@ -7,6 +7,9 @@ import RecordCard from '@/components/RecordCard.jsx'
 import AchievementCard from '@/components/AchievementCard.jsx'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import ProgressBar from '@/components/ProgressBar.jsx'
+import {
+  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon, MenuIcon, XIcon,
+} from '@/components/Icons.jsx'
 import { getCategoryPath, getDirectChildren, getDescendantIds } from '@/utils/categoryTree.js'
 import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
 
@@ -67,11 +70,12 @@ export default function Dashboard() {
   )
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null)
+  const [quickLogOpen, setQuickLogOpen] = useState(false)
 
   const selectedCategory = categories.find(c => c.id === selectedCategoryId)
-  const breadcrumb = selectedCategoryId
-    ? getCategoryPath(selectedCategoryId, categories).map(c => c.name).join(' › ')
-    : ''
+  const breadcrumbPath = selectedCategoryId
+    ? getCategoryPath(selectedCategoryId, categories)
+    : []
 
   // Direct records in this category
   const categoryRecords = useMemo(
@@ -95,10 +99,27 @@ export default function Dashboard() {
     : null
   const recentRecords = [...categoryRecords]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 10)
+    .slice(0, 5)
 
   // Direct children
   const directChildren = getDirectChildren(selectedCategoryId, categories)
+
+  // Close quick log and edit modal on Escape
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        setQuickLogOpen(false)
+        setEditingRecord(null)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
+  // Close quick log when category changes
+  useEffect(() => {
+    setQuickLogOpen(false)
+  }, [selectedCategoryId])
 
   return (
     <div className="flex h-full min-h-0">
@@ -110,7 +131,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Sidebar — always visible on md+, drawer on mobile */}
+      {/* Sidebar */}
       <div
         className={[
           'flex-shrink-0 h-full overflow-hidden z-30 transition-transform duration-300',
@@ -127,97 +148,137 @@ export default function Dashboard() {
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto bg-neutral-50 scrollbar-thin">
-        <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+        <div className="px-6 py-6 space-y-6">
           {/* Mobile sidebar toggle */}
           <button
             className="md:hidden flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 -mt-2 -ml-1 mb-0 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors self-start"
             onClick={() => setSidebarOpen(true)}
           >
-            <span className="text-lg">☰</span>
+            <MenuIcon size={18} />
             <span>카테고리</span>
           </button>
 
           {/* Header */}
           {selectedCategory ? (
             <>
-              <div>
-                <div className="text-xs text-slate-400 font-medium mb-1">{breadcrumb}</div>
-                <h1 className="text-2xl font-extrabold text-slate-900">{selectedCategory.name}</h1>
+              <div className="flex items-start justify-between gap-4">
+                {/* Breadcrumb + title */}
+                <div>
+                  <nav className="flex items-center gap-1 text-xs text-slate-400 mb-1 flex-wrap">
+                    {breadcrumbPath.map((segment, i) => (
+                      <React.Fragment key={segment.id}>
+                        {i > 0 && <span className="select-none">›</span>}
+                        <button
+                          onClick={() => setSelectedCategoryId(segment.id)}
+                          className={[
+                            'transition-colors',
+                            i === breadcrumbPath.length - 1
+                              ? 'text-slate-600 font-medium cursor-default'
+                              : 'hover:text-slate-600 hover:underline',
+                          ].join(' ')}
+                        >
+                          {segment.name}
+                        </button>
+                      </React.Fragment>
+                    ))}
+                  </nav>
+                  <h1 className="text-2xl font-extrabold text-slate-900">{selectedCategory.name}</h1>
+                </div>
+
+                {/* Quick Log button */}
+                <button
+                  onClick={() => setQuickLogOpen(true)}
+                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark active:scale-95 transition-all shadow-sm mt-1"
+                >
+                  <span className="text-base leading-none">+</span>
+                  <span>Quick Log</span>
+                </button>
               </div>
 
-              {/* Summary stat cards */}
+              {/* Summary stat cards — full width 4-column row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <SummaryStatCard
                   label="기록"
                   value={categoryRecords.length}
-                  icon="📋"
+                  icon={<ClipboardIcon size={16} />}
                   accent="#0066FF"
                 />
                 <SummaryStatCard
                   label="업적"
                   value={`${earnedAchievements.length} / ${categoryAchievements.length}`}
-                  icon="🏆"
+                  icon={<TrophyIcon size={16} />}
                   accent="#f59e0b"
                 />
                 <SummaryStatCard
                   label="현재 연속"
                   value={`${streak}d`}
-                  icon="🔥"
+                  icon={<FlameIcon size={16} />}
                   accent={streak >= 7 ? '#CC4204' : '#5B75BA'}
                 />
                 <SummaryStatCard
                   label="최근 기록"
                   value={latestRecord ? formatDate(latestRecord.date) : '—'}
-                  icon="📅"
+                  icon={<CalendarIcon size={16} />}
                 />
               </div>
 
-              {/* Record editor */}
-              <RecordEditor selectedCategoryId={selectedCategoryId} />
-
-              {/* Recent records */}
-              {recentRecords.length > 0 && (
+              {/* Two-column content area */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+                {/* Left column — Recent records */}
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
                     최근 기록
                   </h2>
-                  <div className="space-y-2">
-                    {recentRecords.map(r => (
-                      <RecordCard key={r.id} record={r} showDate onEdit={setEditingRecord} />
-                    ))}
-                  </div>
+                  {recentRecords.length > 0 ? (
+                    <div className="space-y-2">
+                      {recentRecords.map(r => (
+                        <RecordCard key={r.id} record={r} showDate onEdit={setEditingRecord} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 py-6 text-center bg-white border border-slate-100 rounded-xl">
+                      아직 기록이 없습니다. Quick Log로 첫 기록을 추가해보세요!
+                    </p>
+                  )}
                 </section>
-              )}
 
-              {/* Earned achievements */}
-              {earnedAchievements.length > 0 && (
-                <section>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    획득 ({earnedAchievements.length})
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {earnedAchievements.map(a => (
-                      <AchievementCard key={a.id} achievement={a} />
-                    ))}
-                  </div>
-                </section>
-              )}
+                {/* Right column — Achievements */}
+                <div className="space-y-6">
+                  {earnedAchievements.length > 0 && (
+                    <section>
+                      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                        획득 ({earnedAchievements.length})
+                      </h2>
+                      <div className="grid grid-cols-1 gap-3">
+                        {earnedAchievements.map(a => (
+                          <AchievementCard key={a.id} achievement={a} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
-              {/* In progress / locked achievements */}
-              {inProgressAchievements.length > 0 && (
-                <section>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
-                    진행 중 / 잠김 ({inProgressAchievements.length})
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {inProgressAchievements.map(a => (
-                      <AchievementCard key={a.id} achievement={a} />
-                    ))}
-                  </div>
-                </section>
-              )}
+                  {inProgressAchievements.length > 0 && (
+                    <section>
+                      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                        진행 중 / 잠김 ({inProgressAchievements.length})
+                      </h2>
+                      <div className="grid grid-cols-1 gap-3">
+                        {inProgressAchievements.map(a => (
+                          <AchievementCard key={a.id} achievement={a} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
-              {/* Child category groups */}
+                  {earnedAchievements.length === 0 && inProgressAchievements.length === 0 && (
+                    <p className="text-xs text-slate-400 py-4 text-center">
+                      이 카테고리에는 아직 업적이 없습니다
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Child category groups — full width below grid */}
               {directChildren.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
@@ -238,13 +299,42 @@ export default function Dashboard() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <span className="text-5xl mb-4">📁</span>
               <p className="text-lg font-semibold">시작할 카테고리를 선택하세요</p>
               <p className="text-sm mt-1">또는 사이드바에서 새로 만드세요</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Quick Log slide-over */}
+      {quickLogOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30"
+          onClick={() => setQuickLogOpen(false)}
+        >
+          <div
+            className="absolute inset-y-0 right-0 w-full max-w-md bg-neutral-50 shadow-xl overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Quick Log</h2>
+                <button
+                  onClick={() => setQuickLogOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  aria-label="닫기"
+                >
+                  <XIcon size={16} />
+                </button>
+              </div>
+              <RecordEditor
+                selectedCategoryId={selectedCategoryId}
+                onClose={() => setQuickLogOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit record modal */}
       {editingRecord && (
