@@ -67,6 +67,10 @@ export function conditionSummaryText(condition) {
       return `단일 기록 ≥ ${condition.target}${condition.unit ? ' ' + condition.unit : ''}`
     case 'streak':
       return `${condition.target}일 연속 달성`
+    case 'tag_match':
+      return `태그 "${condition.tag}" 기록 1개 이상`
+    case 'tag_count':
+      return `태그 "${condition.tag}" 기록 ${condition.target}회 달성`
     case 'composite': {
       const parts = condition.conditions.map(c => conditionSummaryText(c))
       return parts.join(` ${condition.operator} `)

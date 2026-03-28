@@ -4,16 +4,18 @@ import { useToast } from '@/context/ToastContext.jsx'
 import { todayStr } from '@/utils/formatters.js'
 import { getCategoryPath, getDirectChildren, isLeafCategory } from '@/utils/categoryTree.js'
 
-export default function RecordEditor({ selectedCategoryId }) {
+export default function RecordEditor({ selectedCategoryId, initialRecord = null }) {
   const { categories, saveRecord } = useApp()
   const { addToasts } = useToast()
 
   const [targetCategoryId, setTargetCategoryId] = useState(selectedCategoryId)
-  const [date, setDate] = useState(todayStr())
-  const [value, setValue] = useState('')
-  const [unit, setUnit] = useState('')
-  const [memo, setMemo] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
+  const [date, setDate] = useState(() => initialRecord?.date ?? todayStr())
+  const [value, setValue] = useState(() => initialRecord?.value != null ? String(initialRecord.value) : '')
+  const [unit, setUnit] = useState(() => initialRecord?.unit ?? '')
+  const [memo, setMemo] = useState(() => initialRecord?.memo ?? '')
+  const [photoUrl, setPhotoUrl] = useState(() => initialRecord?.photoUrl ?? '')
+  const [tags, setTags] = useState(() => initialRecord?.tags ?? [])
+  const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -22,10 +24,40 @@ export default function RecordEditor({ selectedCategoryId }) {
     setTargetCategoryId(selectedCategoryId)
   }, [selectedCategoryId])
 
+  // When initialRecord changes, sync all form state
+  React.useEffect(() => {
+    setDate(initialRecord?.date ?? todayStr())
+    setValue(initialRecord?.value != null ? String(initialRecord.value) : '')
+    setUnit(initialRecord?.unit ?? '')
+    setMemo(initialRecord?.memo ?? '')
+    setPhotoUrl(initialRecord?.photoUrl ?? '')
+    setTags(initialRecord?.tags ?? [])
+    setTagInput('')
+  }, [initialRecord])
+
   const isLeaf = isLeafCategory(selectedCategoryId, categories)
   const children = getDirectChildren(selectedCategoryId, categories)
 
   const effectiveCategoryId = isLeaf ? selectedCategoryId : (targetCategoryId || null)
+
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim()
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags(prev => [...prev, trimmed])
+    }
+    setTagInput('')
+  }
+
+  const handleRemoveTag = (tag) => {
+    setTags(prev => prev.filter(t => t !== tag))
+  }
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
+    }
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -43,6 +75,7 @@ export default function RecordEditor({ selectedCategoryId }) {
         unit: unit || null,
         memo: memo || null,
         photoUrl: photoUrl || null,
+        tags,
       },
       (unlockedAchievements) => {
         if (unlockedAchievements.length > 0) {
@@ -57,6 +90,8 @@ export default function RecordEditor({ selectedCategoryId }) {
     setMemo('')
     setPhotoUrl('')
     setDate(todayStr())
+    setTags([])
+    setTagInput('')
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -168,6 +203,50 @@ export default function RecordEditor({ selectedCategoryId }) {
           placeholder="https://…"
           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
         />
+      </div>
+
+      {/* Tags */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+          태그
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={e => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            placeholder="태그 입력 후 추가…"
+            className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
+          />
+          <button
+            type="button"
+            onClick={handleAddTag}
+            className="px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+          >
+            추가
+          </button>
+        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {tags.map(tag => (
+              <span
+                key={tag}
+                className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag)}
+                  className="hover:text-red-500 leading-none"
+                  aria-label={`태그 "${tag}" 제거`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Save button */}

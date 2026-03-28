@@ -26,6 +26,18 @@ export default function RecordCard({ record, showDate = false, compact = false }
           {record.memo && (
             <p className={`text-sm text-slate-600 ${compact ? 'truncate' : 'mt-1'}`}>{record.memo}</p>
           )}
+          {record.tags && record.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {record.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         {record.photoUrl && (
           <img
