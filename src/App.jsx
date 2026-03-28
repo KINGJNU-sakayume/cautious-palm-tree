@@ -5,7 +5,6 @@ import RecordHub from './pages/RecordHub.jsx'
 import AchievementManagement from './pages/AchievementManagement.jsx'
 import AchievementShowcase from './pages/AchievementShowcase.jsx'
 import ToastStack from './components/ToastStack.jsx'
-import DataPortal from './components/DataPortal.jsx'
 import { useApp } from './context/AppContext.jsx'
 
 const NAV_ITEMS = [
@@ -46,10 +45,6 @@ function NavBar() {
         ))}
       </div>
 
-      {/* Data portal — right-aligned */}
-      <div className="ml-auto flex-shrink-0">
-        <DataPortal />
-      </div>
     </nav>
   )
 }

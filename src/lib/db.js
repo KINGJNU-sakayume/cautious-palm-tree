@@ -1,5 +1,9 @@
 import { supabase } from './supabase.js'
 
+function requireClient() {
+  if (!supabase) throw new Error('Supabase not configured — running in offline mode')
+}
+
 // ── Mapping: DB row (snake_case) ↔ JS object (camelCase) ─────────────────────
 
 function rowToCategory(row) {
@@ -78,12 +82,14 @@ function achievementToRow(a) {
 // ── Fetch all ─────────────────────────────────────────────────────────────────
 
 export async function fetchAllCategories() {
+  requireClient()
   const { data, error } = await supabase.from('categories').select('*')
   if (error) throw error
   return data.map(rowToCategory)
 }
 
 export async function fetchAllRecords() {
+  requireClient()
   const { data, error } = await supabase
     .from('records')
     .select('*')
@@ -93,6 +99,7 @@ export async function fetchAllRecords() {
 }
 
 export async function fetchAllAchievements() {
+  requireClient()
   const { data, error } = await supabase.from('achievements').select('*')
   if (error) throw error
   return data.map(rowToAchievement)
@@ -101,6 +108,7 @@ export async function fetchAllAchievements() {
 // ── Categories ────────────────────────────────────────────────────────────────
 
 export async function upsertCategory(category) {
+  requireClient()
   const { error } = await supabase
     .from('categories')
     .upsert(categoryToRow(category), { onConflict: 'id' })
@@ -108,11 +116,13 @@ export async function upsertCategory(category) {
 }
 
 export async function deleteCategory(id) {
+  requireClient()
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error) throw error
 }
 
 export async function bulkUpsertCategories(categories) {
+  requireClient()
   const { error } = await supabase
     .from('categories')
     .upsert(categories.map(categoryToRow), { onConflict: 'id' })
@@ -122,6 +132,7 @@ export async function bulkUpsertCategories(categories) {
 // ── Records ───────────────────────────────────────────────────────────────────
 
 export async function upsertRecord(record) {
+  requireClient()
   const { error } = await supabase
     .from('records')
     .upsert(recordToRow(record), { onConflict: 'id' })
@@ -129,6 +140,7 @@ export async function upsertRecord(record) {
 }
 
 export async function bulkUpsertRecords(records) {
+  requireClient()
   const { error } = await supabase
     .from('records')
     .upsert(records.map(recordToRow), { onConflict: 'id' })
@@ -138,6 +150,7 @@ export async function bulkUpsertRecords(records) {
 // ── Achievements ──────────────────────────────────────────────────────────────
 
 export async function upsertAchievement(achievement) {
+  requireClient()
   const { error } = await supabase
     .from('achievements')
     .upsert(achievementToRow(achievement), { onConflict: 'id' })
@@ -145,11 +158,13 @@ export async function upsertAchievement(achievement) {
 }
 
 export async function deleteAchievement(id) {
+  requireClient()
   const { error } = await supabase.from('achievements').delete().eq('id', id)
   if (error) throw error
 }
 
 export async function bulkUpsertAchievements(achievements) {
+  requireClient()
   const { error } = await supabase
     .from('achievements')
     .upsert(achievements.map(achievementToRow), { onConflict: 'id' })

@@ -8,7 +8,7 @@ import { bulkUpsertCategories, bulkUpsertRecords, bulkUpsertAchievements } from 
  * Required because the categories table self-references parent_id —
  * a parent row must exist before its children can be inserted.
  */
-export function topoSortCategories(cats) {
+function topoSortCategories(cats) {
   const sorted = []
   const remaining = [...cats]
   const seen = new Set()
