@@ -10,6 +10,7 @@ const CONDITION_TYPES = [
   { value: 'streak', label: '연속' },
   { value: 'tag_match', label: '태그 일치' },
   { value: 'tag_count', label: '태그 횟수' },
+  { value: 'tag_set_complete', label: '태그 세트 완성' },
 ]
 
 const META_TYPES = [
@@ -132,6 +133,28 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
             className="w-16 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
           />
           <span className="text-xs text-slate-400">회</span>
+        </div>
+      )}
+
+      {condition.type === 'tag_set_complete' && (
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <label className="text-xs text-slate-500 w-16 flex-shrink-0 pt-1">태그 목록</label>
+            <textarea
+              rows={3}
+              value={(condition.tags || []).join(', ')}
+              onChange={e => {
+                const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean)
+                update('tags', tags)
+                update('target', tags.length)
+              }}
+              placeholder="태그를 쉼표로 구분하여 입력"
+              className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary resize-none"
+            />
+          </div>
+          <p className="text-xs text-slate-400 pl-[72px]">
+            {(condition.tags || []).length}개 태그 — 모두 달성해야 획득
+          </p>
         </div>
       )}
     </div>
