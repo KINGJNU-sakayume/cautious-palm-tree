@@ -53,7 +53,7 @@ export default function AchievementCard({ achievement, onClick }) {
 
       {!achievement.isEarned && !isHiddenLocked && achievement.condition && (
         <div className="mt-2">
-          <div className="text-xs text-slate-400 mb-1">{conditionSummaryText(achievement.condition)}</div>
+          <div className="text-xs text-slate-400 mb-1">{conditionSummaryText(achievement.condition, achievement.progress)}</div>
           <ProgressBar
             current={achievement.progress || 0}
             target={
