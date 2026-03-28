@@ -1,10 +1,11 @@
 import React from 'react'
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
+import { Routes, Route, NavLink } from 'react-router-dom'
 import Dashboard from './pages/Dashboard.jsx'
 import RecordHub from './pages/RecordHub.jsx'
 import AchievementManagement from './pages/AchievementManagement.jsx'
 import AchievementShowcase from './pages/AchievementShowcase.jsx'
 import ToastStack from './components/ToastStack.jsx'
+import DataPortal from './components/DataPortal.jsx'
 
 const NAV_ITEMS = [
   { to: '/', label: '대시보드', icon: '🗂️' },
@@ -15,15 +16,15 @@ const NAV_ITEMS = [
 
 function NavBar() {
   return (
-    <nav className="h-12 flex-shrink-0 bg-white border-b border-slate-200 flex items-center px-4 gap-1 z-10">
+    <nav className="h-12 flex-shrink-0 bg-white border-b border-slate-200 flex items-center px-3 gap-1 z-10">
       {/* Logo */}
-      <div className="flex items-center gap-1.5 mr-6">
+      <div className="flex items-center gap-1.5 mr-3 sm:mr-6">
         <span className="text-base">🏆</span>
-        <span className="font-extrabold text-slate-900 text-sm">업적 라이브러리</span>
+        <span className="font-extrabold text-slate-900 text-sm hidden sm:inline">업적 라이브러리</span>
       </div>
 
       {/* Nav links */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1 flex-1 min-w-0">
         {NAV_ITEMS.map(item => (
           <NavLink
             key={item.to}
@@ -31,7 +32,7 @@ function NavBar() {
             end={item.to === '/'}
             className={({ isActive }) =>
               [
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary/10 text-primary font-semibold'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
@@ -39,9 +40,14 @@ function NavBar() {
             }
           >
             <span className="text-base">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="hidden sm:inline">{item.label}</span>
           </NavLink>
         ))}
+      </div>
+
+      {/* Data portal — right-aligned */}
+      <div className="ml-auto flex-shrink-0">
+        <DataPortal />
       </div>
     </nav>
   )

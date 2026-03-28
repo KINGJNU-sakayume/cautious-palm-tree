@@ -104,7 +104,7 @@ function HighTierDisplayCase({ achievements }) {
 function DetailPanel({ achievement, onClose }) {
   if (!achievement) return null
   return (
-    <div className="flex-1 border-l border-slate-200 bg-white p-5 overflow-y-auto scrollbar-thin animate-fade-in">
+    <div className="flex-1 sm:border-l border-slate-200 bg-white p-5 overflow-y-auto scrollbar-thin animate-fade-in sm:static absolute inset-0 z-10">
       <div className="flex items-start justify-between gap-2 mb-4">
         <TrophyTierBadge tier={achievement.tier} size="lg" />
         <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-lg">✕</button>
@@ -226,7 +226,7 @@ export default function AchievementShowcase() {
           <h1 className="text-2xl font-extrabold text-slate-900">업적 쇼케이스</h1>
 
           {/* Stats row */}
-          <div className="grid grid-cols-6 gap-4 border-b border-slate-100 pb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 border-b border-slate-100 pb-6">
             {[
               { label: '전체', value: achievements.length },
               { label: '획득', value: earned.length, accent: '#22c55e' },
@@ -270,15 +270,15 @@ export default function AchievementShowcase() {
 
         {/* ── WoW-style Browser ────────────────────────────────────── */}
         <section className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
-          <div className="flex" style={{ minHeight: 500 }}>
-            {/* Left: category list */}
-            <div className="w-48 flex-shrink-0 border-r border-slate-200 py-3 overflow-y-auto scrollbar-thin">
+          <div className="flex flex-col sm:flex-row" style={{ minHeight: 500 }}>
+            {/* Left: category list — horizontal scroll on mobile */}
+            <div className="sm:w-48 flex-shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 sm:py-3 overflow-x-auto sm:overflow-y-auto scrollbar-thin flex sm:flex-col flex-row">
               <button
                 onClick={() => { setSelectedCategoryId(null); setSelectedAchievement(null) }}
                 className={[
-                  'w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors',
+                  'flex-shrink-0 sm:w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap',
                   selectedCategoryId === null
-                    ? 'bg-primary/10 text-primary border-r-2 border-primary'
+                    ? 'bg-primary/10 text-primary sm:border-r-2 border-primary border-b-2 sm:border-b-0'
                     : 'hover:bg-slate-50 text-slate-600',
                 ].join(' ')}
               >
@@ -289,9 +289,9 @@ export default function AchievementShowcase() {
                   key={cat.id}
                   onClick={() => { setSelectedCategoryId(cat.id); setSelectedAchievement(null) }}
                   className={[
-                    'w-full text-left px-4 py-2.5 text-sm transition-colors',
+                    'flex-shrink-0 sm:w-full text-left px-4 py-2.5 text-sm transition-colors whitespace-nowrap',
                     selectedCategoryId === cat.id
-                      ? 'bg-primary/10 text-primary font-semibold border-r-2 border-primary'
+                      ? 'bg-primary/10 text-primary font-semibold sm:border-r-2 border-primary border-b-2 sm:border-b-0'
                       : 'hover:bg-slate-50 text-slate-600',
                   ].join(' ')}
                 >
@@ -301,9 +301,9 @@ export default function AchievementShowcase() {
             </div>
 
             {/* Right: content */}
-            <div className="flex flex-1 min-w-0">
+            <div className="flex flex-1 min-w-0 relative">
               {/* Achievement list */}
-              <div className={`overflow-y-auto scrollbar-thin p-4 space-y-3 ${hasDetailPanel ? 'w-1/2' : 'flex-1'}`}>
+              <div className={`overflow-y-auto scrollbar-thin p-4 space-y-3 ${hasDetailPanel ? 'hidden sm:block sm:w-1/2' : 'flex-1'}`}>
                 {/* Recent unlocks */}
                 {!selectedCategoryId && recentUnlocks.length > 0 && (
                   <div className="mb-2">

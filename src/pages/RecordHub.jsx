@@ -15,7 +15,7 @@ function getDateMinus(days) {
 export default function RecordHub() {
   const { records, achievements, categories } = useApp()
 
-  const [calendarOpen, setCalendarOpen] = useState(true)
+  const [calendarOpen, setCalendarOpen] = useState(() => window.innerWidth >= 768)
 
   const [filters, setFilters] = useState({
     startDate: getDateMinus(30),
