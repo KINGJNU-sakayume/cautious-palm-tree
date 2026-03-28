@@ -6,6 +6,7 @@ import AchievementManagement from './pages/AchievementManagement.jsx'
 import AchievementShowcase from './pages/AchievementShowcase.jsx'
 import ToastStack from './components/ToastStack.jsx'
 import DataPortal from './components/DataPortal.jsx'
+import { useApp } from './context/AppContext.jsx'
 
 const NAV_ITEMS = [
   { to: '/', label: '대시보드', icon: '🗂️' },
@@ -54,16 +55,29 @@ function NavBar() {
 }
 
 export default function App() {
+  const { loading, dbError } = useApp()
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <NavBar />
+      {dbError && (
+        <div className="bg-red-50 border-b border-red-200 text-red-700 text-xs px-4 py-1.5">
+          DB 연결 오류: {dbError}
+        </div>
+      )}
       <main className="flex-1 min-h-0 overflow-hidden">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/records" element={<RecordHub />} />
-          <Route path="/achievements" element={<AchievementManagement />} />
-          <Route path="/showcase" element={<AchievementShowcase />} />
-        </Routes>
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+            데이터 불러오는 중...
+          </div>
+        ) : (
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/records" element={<RecordHub />} />
+            <Route path="/achievements" element={<AchievementManagement />} />
+            <Route path="/showcase" element={<AchievementShowcase />} />
+          </Routes>
+        )}
       </main>
       <ToastStack />
     </div>
