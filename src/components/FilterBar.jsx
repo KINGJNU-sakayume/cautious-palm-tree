@@ -37,7 +37,7 @@ export default function FilterBar({ filters, onChange }) {
       {/* Date range */}
       <div className="flex items-center gap-2">
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-          From
+          시작일
         </label>
         <input
           type="date"
@@ -48,7 +48,7 @@ export default function FilterBar({ filters, onChange }) {
       </div>
       <div className="flex items-center gap-2">
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-          To
+          종료일
         </label>
         <input
           type="date"
@@ -67,8 +67,8 @@ export default function FilterBar({ filters, onChange }) {
         >
           <span className="text-slate-500">
             {(filters.categories || []).length === 0
-              ? 'All Categories'
-              : selectedCatLabels || `${filters.categories.length} selected`}
+              ? '모든 카테고리'
+              : selectedCatLabels || `${filters.categories.length}개 선택됨`}
           </span>
           <span className="text-slate-400">▾</span>
         </button>
@@ -85,7 +85,7 @@ export default function FilterBar({ filters, onChange }) {
                     : 'hover:bg-slate-50 text-slate-700'
                 }`}
               >
-                All Categories
+                모든 카테고리
               </button>
               {categories.map(cat => (
                 <label
@@ -120,7 +120,7 @@ export default function FilterBar({ filters, onChange }) {
                 : 'text-slate-500 hover:text-slate-700',
             ].join(' ')}
           >
-            {t === 'all' ? 'All' : t === 'records' ? 'Records' : 'Achievements'}
+            {t === 'all' ? '전체' : t === 'records' ? '기록' : '업적'}
           </button>
         ))}
       </div>
@@ -131,7 +131,7 @@ export default function FilterBar({ filters, onChange }) {
         onClick={() => onChange({ startDate: '', endDate: '', categories: [], type: 'all' })}
         className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
       >
-        Reset
+        초기화
       </button>
     </div>
   )

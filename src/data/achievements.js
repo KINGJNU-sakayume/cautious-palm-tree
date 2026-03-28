@@ -3,8 +3,8 @@ export const achievements = [
   // ── RUNNING ──────────────────────────────────────────────────────────
   {
     id: 'ach-run-001',
-    title: 'First Steps',
-    description: 'Log your first running session.',
+    title: '첫 걸음',
+    description: '첫 번째 러닝 세션을 기록하세요.',
     categoryId: 'cat-running',
     tier: 'bronze',
     type: 'one-time',
@@ -17,8 +17,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-002',
-    title: 'Road Warrior',
-    description: 'Run 10 times total.',
+    title: '도로의 전사',
+    description: '총 10회 달리기를 완료하세요.',
     categoryId: 'cat-running',
     tier: 'silver',
     type: 'one-time',
@@ -31,8 +31,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-003',
-    title: 'Marathon Dreamer',
-    description: 'Accumulate 100 km of running.',
+    title: '마라톤 도전자',
+    description: '러닝 누적 거리 100km를 달성하세요.',
     categoryId: 'cat-running',
     tier: 'gold',
     type: 'one-time',
@@ -45,8 +45,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-004',
-    title: 'Speed Demon',
-    description: 'Log a single run of 21 km or more.',
+    title: '속도의 악마',
+    description: '단일 러닝 세션에서 21km 이상을 기록하세요.',
     categoryId: 'cat-running',
     tier: 'platinum',
     type: 'one-time',
@@ -59,8 +59,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-005',
-    title: 'Streak Runner',
-    description: 'Run on 7 consecutive days.',
+    title: '연속 달리기',
+    description: '7일 연속으로 달리기를 완료하세요.',
     categoryId: 'cat-running',
     tier: 'silver',
     type: 'one-time',
@@ -73,8 +73,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-006',
-    title: 'Iron Legs',
-    description: 'Run 30 consecutive days AND accumulate 200 km.',
+    title: '철의 다리',
+    description: '30일 연속 달리기와 누적 200km를 동시에 달성하세요.',
     categoryId: 'cat-running',
     tier: 'diamond',
     type: 'one-time',
@@ -94,8 +94,8 @@ export const achievements = [
   },
   {
     id: 'ach-run-007',
-    title: 'The Unknown Distance',
-    description: 'A secret achievement for the most dedicated runners.',
+    title: '미지의 거리',
+    description: '가장 헌신적인 러너들을 위한 비밀 업적.',
     categoryId: 'cat-running',
     tier: 'red_diamond',
     type: 'one-time',
@@ -109,8 +109,8 @@ export const achievements = [
   // Tag-based: log 5 outdoor runs
   {
     id: 'ach-run-008',
-    title: 'Trail Blazer',
-    description: 'Log 5 outdoor running sessions.',
+    title: '트레일 블레이저',
+    description: '야외 러닝 세션 5회를 기록하세요.',
     categoryId: 'cat-running',
     tier: 'silver',
     type: 'one-time',
@@ -125,8 +125,8 @@ export const achievements = [
   // ── BENCH PRESS ──────────────────────────────────────────────────────
   {
     id: 'ach-bench-001',
-    title: 'Bar Touched',
-    description: 'Log your first bench press session.',
+    title: '첫 벤치 프레스',
+    description: '첫 번째 벤치 프레스 세션을 기록하세요.',
     categoryId: 'cat-bench-press',
     tier: 'bronze',
     type: 'one-time',
@@ -139,8 +139,8 @@ export const achievements = [
   },
   {
     id: 'ach-bench-002',
-    title: 'The Plate Club',
-    description: 'Bench press 100 kg in a single session.',
+    title: '플레이트 클럽',
+    description: '단일 세션에서 벤치 프레스 100kg을 달성하세요.',
     categoryId: 'cat-bench-press',
     tier: 'gold',
     type: 'one-time',
@@ -153,8 +153,8 @@ export const achievements = [
   },
   {
     id: 'ach-bench-003',
-    title: 'The 1.5x Club',
-    description: 'Bench press 120 kg in a single session.',
+    title: '1.5배 클럽',
+    description: '단일 세션에서 벤치 프레스 120kg을 달성하세요.',
     categoryId: 'cat-bench-press',
     tier: 'platinum',
     type: 'one-time',
@@ -167,8 +167,8 @@ export const achievements = [
   },
   {
     id: 'ach-bench-004',
-    title: 'Consistent Presser',
-    description: 'Log bench press 20 times.',
+    title: '꾸준한 벤치 프레서',
+    description: '벤치 프레스 세션을 총 20회 기록하세요.',
     categoryId: 'cat-bench-press',
     tier: 'silver',
     type: 'one-time',
@@ -182,8 +182,8 @@ export const achievements = [
   // Tag-based: log a bench press session tagged as a PR
   {
     id: 'ach-bench-005',
-    title: 'New Record',
-    description: 'Log a bench press session tagged as a personal record.',
+    title: '새 기록',
+    description: '개인 최고 기록으로 태그된 벤치 프레스 세션을 기록하세요.',
     categoryId: 'cat-bench-press',
     tier: 'silver',
     type: 'repeatable',
@@ -198,8 +198,8 @@ export const achievements = [
   // ── SQUAT ─────────────────────────────────────────────────────────────
   {
     id: 'ach-squat-001',
-    title: 'Knees Over Toes',
-    description: 'Log your first squat session.',
+    title: '스쿼트 입문',
+    description: '첫 번째 스쿼트 세션을 기록하세요.',
     categoryId: 'cat-squat',
     tier: 'bronze',
     type: 'one-time',
@@ -212,8 +212,8 @@ export const achievements = [
   },
   {
     id: 'ach-squat-002',
-    title: 'Double Plates',
-    description: 'Squat 140 kg in a single session.',
+    title: '더블 플레이트',
+    description: '단일 세션에서 스쿼트 140kg을 달성하세요.',
     categoryId: 'cat-squat',
     tier: 'gold',
     type: 'one-time',
@@ -228,8 +228,8 @@ export const achievements = [
   // ── BOOKS ─────────────────────────────────────────────────────────────
   {
     id: 'ach-books-001',
-    title: 'Page Turner',
-    description: 'Log your first reading session.',
+    title: '독서 입문',
+    description: '첫 번째 독서 세션을 기록하세요.',
     categoryId: 'cat-books',
     tier: 'bronze',
     type: 'one-time',
@@ -242,8 +242,8 @@ export const achievements = [
   },
   {
     id: 'ach-books-002',
-    title: 'Bookworm',
-    description: 'Read 1,000 pages total.',
+    title: '독서광',
+    description: '총 1,000페이지를 읽으세요.',
     categoryId: 'cat-books',
     tier: 'silver',
     type: 'one-time',
@@ -257,8 +257,8 @@ export const achievements = [
   // Modified: was generic cumulative, now requires reading non-fiction books 3 times
   {
     id: 'ach-books-003',
-    title: 'Non-Fiction Devotee',
-    description: 'Log 3 reading sessions tagged as non-fiction.',
+    title: '논픽션 마니아',
+    description: '논픽션으로 태그된 독서 세션을 3회 기록하세요.',
     categoryId: 'cat-books',
     tier: 'gold',
     type: 'one-time',
@@ -273,8 +273,8 @@ export const achievements = [
   // ── JAPANESE ─────────────────────────────────────────────────────────
   {
     id: 'ach-jp-001',
-    title: 'Hajimemashite',
-    description: 'Log your first Japanese study session.',
+    title: '하지메마시테',
+    description: '첫 번째 일본어 공부 세션을 기록하세요.',
     categoryId: 'cat-japanese',
     tier: 'bronze',
     type: 'one-time',
@@ -287,8 +287,8 @@ export const achievements = [
   },
   {
     id: 'ach-jp-002',
-    title: '30-Day Immersion',
-    description: 'Study Japanese on 30 consecutive days.',
+    title: '30일 몰입',
+    description: '30일 연속으로 일본어를 공부하세요.',
     categoryId: 'cat-japanese',
     tier: 'platinum',
     type: 'one-time',
@@ -301,8 +301,8 @@ export const achievements = [
   },
   {
     id: 'ach-jp-003',
-    title: 'Kanji Hunter',
-    description: 'Log 50 Japanese study sessions.',
+    title: '한자 사냥꾼',
+    description: '일본어 공부 세션을 50회 기록하세요.',
     categoryId: 'cat-japanese',
     tier: 'silver',
     type: 'one-time',
@@ -317,8 +317,8 @@ export const achievements = [
   // ── MEDITATION ────────────────────────────────────────────────────────
   {
     id: 'ach-med-001',
-    title: 'Still Mind',
-    description: 'Log your first meditation session.',
+    title: '고요한 마음',
+    description: '첫 번째 명상 세션을 기록하세요.',
     categoryId: 'cat-meditation',
     tier: 'bronze',
     type: 'one-time',
@@ -331,8 +331,8 @@ export const achievements = [
   },
   {
     id: 'ach-med-002',
-    title: 'Inner Peace',
-    description: 'Meditate for 21 consecutive days.',
+    title: '내면의 평화',
+    description: '21일 연속으로 명상을 실천하세요.',
     categoryId: 'cat-meditation',
     tier: 'gold',
     type: 'one-time',
@@ -345,8 +345,8 @@ export const achievements = [
   },
   {
     id: 'ach-med-003',
-    title: 'Transcendence',
-    description: 'Meditate for 100 consecutive days.',
+    title: '초월',
+    description: '100일 연속으로 명상을 실천하세요.',
     categoryId: 'cat-meditation',
     tier: 'diamond',
     type: 'one-time',
@@ -360,8 +360,8 @@ export const achievements = [
   // Tag-based: log a deep meditation session
   {
     id: 'ach-med-004',
-    title: 'Deep Dive',
-    description: 'Log a meditation session tagged as deep focus.',
+    title: '깊은 명상',
+    description: '깊은 집중으로 태그된 명상 세션을 기록하세요.',
     categoryId: 'cat-meditation',
     tier: 'silver',
     type: 'repeatable',
@@ -376,8 +376,8 @@ export const achievements = [
   // ── JOURNALING ────────────────────────────────────────────────────────
   {
     id: 'ach-journal-001',
-    title: 'Dear Diary',
-    description: 'Write your first journal entry.',
+    title: '친애하는 일기',
+    description: '첫 번째 일기를 작성하세요.',
     categoryId: 'cat-journaling',
     tier: 'bronze',
     type: 'one-time',
@@ -391,8 +391,8 @@ export const achievements = [
   // Modified: was generic count-30, now requires 10 reflection-tagged entries
   {
     id: 'ach-journal-002',
-    title: 'Weekly Reflector',
-    description: 'Log 10 journal entries tagged as reflections.',
+    title: '주간 성찰자',
+    description: '성찰로 태그된 일기 항목을 10개 기록하세요.',
     categoryId: 'cat-journaling',
     tier: 'silver',
     type: 'one-time',
@@ -407,8 +407,8 @@ export const achievements = [
   // ── TRAVEL ────────────────────────────────────────────────────────────
   {
     id: 'ach-travel-001',
-    title: 'Passport Stamped',
-    description: 'Log your first international trip.',
+    title: '여권 도장',
+    description: '첫 번째 해외여행을 기록하세요.',
     categoryId: 'cat-international',
     tier: 'gold',
     type: 'one-time',
@@ -421,8 +421,8 @@ export const achievements = [
   },
   {
     id: 'ach-travel-002',
-    title: 'World Traveler',
-    description: 'Log 5 international trips.',
+    title: '세계 여행자',
+    description: '해외여행을 5회 기록하세요.',
     categoryId: 'cat-international',
     tier: 'platinum',
     type: 'one-time',
@@ -437,8 +437,8 @@ export const achievements = [
   // ── WRITING ───────────────────────────────────────────────────────────
   {
     id: 'ach-write-001',
-    title: 'First Draft',
-    description: 'Log your first writing session.',
+    title: '첫 번째 초고',
+    description: '첫 번째 글쓰기 세션을 기록하세요.',
     categoryId: 'cat-writing',
     tier: 'bronze',
     type: 'one-time',
@@ -451,8 +451,8 @@ export const achievements = [
   },
   {
     id: 'ach-write-002',
-    title: 'NaNoWriMo Spirit',
-    description: 'Write 50,000 words total.',
+    title: '나노라이모 정신',
+    description: '총 50,000 단어를 작성하세요.',
     categoryId: 'cat-writing',
     tier: 'gold',
     type: 'one-time',
@@ -467,8 +467,8 @@ export const achievements = [
   // ── HYDRATION ─────────────────────────────────────────────────────────
   {
     id: 'ach-hydration-001',
-    title: 'Stay Hydrated',
-    description: 'Log a water intake of 3L or more in a single day.',
+    title: '수분 충전',
+    description: '하루 수분 섭취량 3L 이상을 기록하세요.',
     categoryId: 'cat-hydration',
     tier: 'bronze',
     type: 'repeatable',
@@ -483,8 +483,8 @@ export const achievements = [
   // ── CYCLING ───────────────────────────────────────────────────────────
   {
     id: 'ach-cycling-001',
-    title: 'First Pedal',
-    description: 'Log your first cycling session.',
+    title: '첫 페달',
+    description: '첫 번째 사이클링 세션을 기록하세요.',
     categoryId: 'cat-cycling',
     tier: 'bronze',
     type: 'one-time',
@@ -497,8 +497,8 @@ export const achievements = [
   },
   {
     id: 'ach-cycling-002',
-    title: 'Century Rider',
-    description: 'Cycle 100 km in a single session.',
+    title: '100km 라이더',
+    description: '단일 세션에서 100km를 사이클링하세요.',
     categoryId: 'cat-cycling',
     tier: 'diamond',
     type: 'one-time',
@@ -513,8 +513,8 @@ export const achievements = [
   // ── CAREER ────────────────────────────────────────────────────────────
   {
     id: 'ach-career-001',
-    title: 'Level Up',
-    description: 'Log a career milestone.',
+    title: '레벨 업',
+    description: '커리어 이정표를 기록하세요.',
     categoryId: 'cat-career',
     tier: 'gold',
     type: 'one-time',
@@ -529,8 +529,8 @@ export const achievements = [
   // ── META ACHIEVEMENTS ─────────────────────────────────────────────────
   {
     id: 'ach-meta-001',
-    title: 'Fitness Fanatic',
-    description: 'Earn 5 achievements in the Fitness category.',
+    title: '피트니스 광팬',
+    description: '피트니스 카테고리에서 업적 5개를 획득하세요.',
     categoryId: 'cat-fitness',
     tier: 'gold',
     type: 'meta',
@@ -543,8 +543,8 @@ export const achievements = [
   },
   {
     id: 'ach-meta-002',
-    title: 'Triple Threat',
-    description: 'Earn the "Road Warrior", "Marathon Dreamer", and "Streak Runner" achievements.',
+    title: '트리플 위협',
+    description: '"도로의 전사", "마라톤 도전자", "연속 달리기" 업적을 모두 획득하세요.',
     categoryId: 'cat-running',
     tier: 'platinum',
     type: 'meta',
@@ -560,8 +560,8 @@ export const achievements = [
   },
   {
     id: 'ach-meta-003',
-    title: 'Mindfulness Master',
-    description: 'Earn every achievement in the Meditation category.',
+    title: '마음 챙김 마스터',
+    description: '명상 카테고리의 모든 업적을 달성하세요.',
     categoryId: 'cat-meditation',
     tier: 'diamond',
     type: 'meta',

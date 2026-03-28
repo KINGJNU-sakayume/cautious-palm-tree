@@ -27,33 +27,76 @@ function computeStreak(records) {
   return longest
 }
 
-function AchievementTimeline({ achievements }) {
-  // Last 6 months
-  const months = []
-  const today = new Date()
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
-    const label = d.toLocaleDateString('en-US', { month: 'short' })
-    const count = achievements.filter(a => a.isEarned && a.earnedAt && a.earnedAt.startsWith(key)).length
-    months.push({ key, label, count })
+function HighTierDisplayCase({ achievements }) {
+  const highTierEarned = achievements.filter(
+    a => (a.tier === 'red_diamond' || a.tier === 'diamond') && a.isEarned
+  )
+
+  if (highTierEarned.length === 0) {
+    return (
+      <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-8 flex flex-col items-center justify-center min-h-36 text-center">
+        {/* Decorative placeholder silhouettes */}
+        <div className="flex items-end justify-center gap-4 mb-5 opacity-20 pointer-events-none select-none">
+          {[48, 64, 48].map((size, i) => (
+            <div
+              key={i}
+              className="rounded-xl flex items-center justify-center bg-slate-700 border border-slate-600"
+              style={{ width: size, height: size }}
+            >
+              <span style={{ fontSize: size * 0.5 }}>💎</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Lock icon */}
+        <div className="text-4xl mb-3 animate-pulse">🔒</div>
+
+        {/* Korean motivational text */}
+        <p className="text-lg font-extrabold text-white mb-1">
+          최고의 영광이 이곳에 전시됩니다
+        </p>
+        <p className="text-base font-semibold text-amber-400 mb-2">
+          위대한 도전을 시작하세요!
+        </p>
+        <p className="text-xs text-slate-400 max-w-xs">
+          다이아몬드 및 레드 다이아몬드 업적을 획득하면 이곳에 전시됩니다.
+        </p>
+      </div>
+    )
   }
-  const maxCount = Math.max(...months.map(m => m.count), 1)
 
   return (
-    <div className="flex items-end gap-2 h-16">
-      {months.map(m => (
-        <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-          <span className="text-xs font-semibold text-slate-700">{m.count > 0 ? m.count : ''}</span>
-          <div className="w-full bg-slate-100 rounded-sm overflow-hidden" style={{ height: 36 }}>
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">💎</span>
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          최고 등급 전시관
+        </span>
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        {highTierEarned.map(a => {
+          const isRed = a.tier === 'red_diamond'
+          return (
             <div
-              className="bg-primary rounded-sm transition-all"
-              style={{ height: `${(m.count / maxCount) * 100}%`, width: '100%', marginTop: 'auto' }}
-            />
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium">{m.label}</span>
-        </div>
-      ))}
+              key={a.id}
+              className={[
+                'flex flex-col gap-2 rounded-xl px-4 py-3 min-w-36 flex-1',
+                isRed
+                  ? 'bg-gradient-to-br from-red-950 to-orange-900 ring-1 ring-red-500/40'
+                  : 'bg-gradient-to-br from-cyan-950 to-slate-900 ring-1 ring-cyan-500/40',
+              ].join(' ')}
+            >
+              <TrophyTierBadge tier={a.tier} size="sm" />
+              <p className="text-sm font-bold text-white leading-snug">{a.title}</p>
+              {a.earnedAt && (
+                <p className={`text-xs font-medium ${isRed ? 'text-red-300' : 'text-cyan-300'}`}>
+                  {formatDate(a.earnedAt)}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -77,30 +120,30 @@ function DetailPanel({ achievement, onClose }) {
 
       <div className="space-y-3 text-sm">
         <div className="flex justify-between">
-          <span className="text-slate-500">Tier</span>
+          <span className="text-slate-500">티어</span>
           <span className="font-semibold">{tierLabel(achievement.tier)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500">Rarity</span>
+          <span className="text-slate-500">희귀도</span>
           <span className={`font-semibold ${achievement.rarity < 5 ? 'text-amber-500' : ''}`}>
-            {achievement.rarity}% {achievement.rarity < 5 ? '(Rare)' : ''}
+            {achievement.rarity}% {achievement.rarity < 5 ? '(희귀)' : ''}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500">Status</span>
+          <span className="text-slate-500">상태</span>
           <span className={`font-semibold ${achievement.isEarned ? 'text-green-500' : 'text-slate-400'}`}>
-            {achievement.isEarned ? '✓ Earned' : '🔒 Locked'}
+            {achievement.isEarned ? '✓ 획득' : '🔒 잠김'}
           </span>
         </div>
         {achievement.isEarned && achievement.earnedAt && (
           <div className="flex justify-between">
-            <span className="text-slate-500">Earned</span>
+            <span className="text-slate-500">획득일</span>
             <span className="font-semibold">{formatDate(achievement.earnedAt)}</span>
           </div>
         )}
         {(!achievement.isHidden || achievement.isEarned) && (
           <div>
-            <span className="text-slate-500 block mb-1.5">Condition</span>
+            <span className="text-slate-500 block mb-1.5">조건</span>
             <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 font-medium">
               {conditionSummaryText(achievement.condition)}
             </div>
@@ -109,7 +152,7 @@ function DetailPanel({ achievement, onClose }) {
         {!achievement.isEarned && achievement.condition?.target && (
           <div>
             <div className="flex justify-between text-xs text-slate-500 mb-1">
-              <span>Progress</span>
+              <span>진행도</span>
               <span>{achievement.progress || 0} / {achievement.condition.target}</span>
             </div>
             <ProgressBar
@@ -180,18 +223,18 @@ export default function AchievementShowcase() {
 
         {/* ── Global Stats Header ──────────────────────────────────── */}
         <section className="bg-white border border-slate-200 rounded-2xl shadow-card px-8 py-6 space-y-6">
-          <h1 className="text-2xl font-extrabold text-slate-900">Achievement Showcase</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">업적 쇼케이스</h1>
 
           {/* Stats row */}
           <div className="grid grid-cols-6 gap-4 border-b border-slate-100 pb-6">
             {[
-              { label: 'Total', value: achievements.length },
-              { label: 'Earned', value: earned.length, accent: '#22c55e' },
-              { label: 'Locked', value: locked.length, accent: '#94a3b8' },
-              { label: 'Records', value: records.length, accent: '#0066FF' },
-              { label: 'Longest Streak', value: `${longestStreak}d`, accent: '#CC4204' },
+              { label: '전체', value: achievements.length },
+              { label: '획득', value: earned.length, accent: '#22c55e' },
+              { label: '잠김', value: locked.length, accent: '#94a3b8' },
+              { label: '기록', value: records.length, accent: '#0066FF' },
+              { label: '최장 연속', value: `${longestStreak}d`, accent: '#CC4204' },
               {
-                label: 'Rarest Earned',
+                label: '최희귀 획득',
                 value: rarestEarned ? `${rarestEarned.rarity}%` : '—',
                 sub: rarestEarned?.title || '',
                 accent: '#f59e0b',
@@ -212,7 +255,7 @@ export default function AchievementShowcase() {
 
           {/* Tier count row */}
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">By Tier</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">티어별</span>
             {TIERS.map(tier => (
               <div key={tier} className="flex items-center gap-1.5">
                 <TrophyTierBadge tier={tier} size="sm" />
@@ -221,13 +264,8 @@ export default function AchievementShowcase() {
             ))}
           </div>
 
-          {/* Timeline */}
-          <div>
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-              Achievements Earned (Last 6 Months)
-            </div>
-            <AchievementTimeline achievements={achievements} />
-          </div>
+          {/* High-Tier Display Case */}
+          <HighTierDisplayCase achievements={achievements} />
         </section>
 
         {/* ── WoW-style Browser ────────────────────────────────────── */}
@@ -244,7 +282,7 @@ export default function AchievementShowcase() {
                     : 'hover:bg-slate-50 text-slate-600',
                 ].join(' ')}
               >
-                All
+                전체
               </button>
               {rootCategories.map(cat => (
                 <button
@@ -270,7 +308,7 @@ export default function AchievementShowcase() {
                 {!selectedCategoryId && recentUnlocks.length > 0 && (
                   <div className="mb-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Recent Unlocks
+                      최근 획득
                     </h3>
                     <div className="space-y-1.5">
                       {recentUnlocks.map(a => (
@@ -288,7 +326,7 @@ export default function AchievementShowcase() {
                 {!selectedCategoryId && categoryProgress.length > 0 && (
                   <div className="mb-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Category Progress
+                      카테고리 진행률
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       {categoryProgress.map(({ cat, earnedCount, total }) => (
@@ -308,11 +346,11 @@ export default function AchievementShowcase() {
                 <div>
                   {selectedCategoryId && (
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      {categories.find(c => c.id === selectedCategoryId)?.name} Achievements
+                      {categories.find(c => c.id === selectedCategoryId)?.name} 업적
                     </h3>
                   )}
                   {filteredAchievements.length === 0 && (
-                    <div className="text-sm text-slate-400 py-6 text-center">No achievements in this category</div>
+                    <div className="text-sm text-slate-400 py-6 text-center">이 카테고리에 업적이 없습니다</div>
                   )}
                   <div className="space-y-2">
                     {filteredAchievements.map(a => (
