@@ -46,7 +46,7 @@ export function tierLabel(tier) {
     gold: '골드',
     platinum: '플래티넘',
     diamond: '다이아몬드',
-    red_diamond: '레드 다이아몬드',
+    legendary: '레전더리',
   }
   return labels[tier] || tier
 }
@@ -148,7 +148,7 @@ export function achievementStatusText(isEarned) {
  */
 export function tierSubtext(tier) {
   const map = {
-    red_diamond: '탁월한 업적을 달성했습니다!',
+    legendary:   '탁월한 업적을 달성했습니다!',
     diamond:     '탁월한 업적을 달성했습니다!',
     platinum:    '희귀한 마일스톤에 도달했습니다!',
     gold:        '희귀한 마일스톤에 도달했습니다!',
@@ -181,4 +181,20 @@ export function rarityText(rarity) {
  */
 export function dateToMonth(dateStr) {
   return dateStr?.slice(0, 7) ?? ''
+}
+
+/**
+ * Renders a progress display template string, substituting {current}, {total},
+ * {remaining}, {pct}, and {last_date} tokens with the provided values.
+ */
+export function renderTemplate(template, values) {
+  if (!template) return ''
+  const current = values.current ?? 0
+  const total = values.total ?? 0
+  return template
+    .replace(/{current}/g, current)
+    .replace(/{total}/g, total)
+    .replace(/{remaining}/g, total - current)
+    .replace(/{pct}/g, total > 0 ? Math.round((current / total) * 100) : 0)
+    .replace(/{last_date}/g, values.lastDate ?? '—')
 }

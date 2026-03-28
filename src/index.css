@@ -57,4 +57,34 @@
   .scrollbar-thin {
     scrollbar-width: thin;
   }
+
+  /* Legendary tier badge — deep purple glow */
+  .tier-badge-legendary {
+    background: #3C3489;
+    color: #CECBF6;
+    box-shadow: 0 0 8px 2px rgba(127, 119, 221, 0.55);
+  }
+
+  /* Checklist expand/collapse animation */
+  .checklist-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 200ms ease;
+  }
+  .checklist-expand.open {
+    max-height: 1000px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .tier-badge-legendary {
+    box-shadow: 0 0 8px 2px rgba(127, 119, 221, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-badge-legendary {
+    box-shadow: none;
+    outline: 1.5px solid #7F77DD;
+  }
 }

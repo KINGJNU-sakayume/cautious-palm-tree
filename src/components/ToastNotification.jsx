@@ -28,7 +28,7 @@ export default function ToastNotification({ toast }) {
         style={{
           backgroundColor: {
             bronze: '#cd7f32', silver: '#9ca3af', gold: '#f59e0b',
-            platinum: '#6366f1', diamond: '#06b6d4', red_diamond: '#CC4204',
+            platinum: '#6366f1', diamond: '#06b6d4', legendary: '#7F77DD',
           }[achievement.tier] || '#0066FF',
         }}
       />
