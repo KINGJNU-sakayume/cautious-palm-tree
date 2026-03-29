@@ -26,7 +26,7 @@ function MoveToPopupNode({ node, depth, invalidIds, onSelect }) {
         ].join(' ')}
         style={{ paddingLeft: `${depth * 12 + 8}px`, paddingRight: 8 }}
         onClick={() => !isInvalid && onSelect(node.id)}
-        title={isInvalid ? 'Cannot move a node into itself or its descendants' : undefined}
+        title={isInvalid ? '자기 자신 또는 하위 항목으로 이동할 수 없습니다' : undefined}
       >
         <span
           onClick={e => { e.stopPropagation(); if (hasChildren) setExpanded(v => !v) }}

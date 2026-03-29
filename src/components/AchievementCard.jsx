@@ -85,7 +85,7 @@ export default function AchievementCard({ achievement, onClick }) {
           <div className="flex items-center gap-2 mb-1.5">
             <TrophyTierBadge tier={achievement.tier} size="xs" />
             {achievement.rarity < 5 && achievement.isEarned && (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Rare</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">희귀</span>
             )}
           </div>
           <div

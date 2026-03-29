@@ -82,7 +82,7 @@ export function conditionSummaryText(condition, progress) {
     case 'meta_clear':
       return '카테고리 내 모든 업적 달성'
     case 'tag_set_complete':
-      return `${progress ?? 0} / ${condition.tags.length} 다리 완주`
+      return `${progress ?? 0} / ${condition.tags.length} 완료`
     default:
       return condition.type
   }
