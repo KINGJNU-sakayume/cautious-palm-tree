@@ -11,11 +11,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <AppErrorBoundary>
     <React.StrictMode>
       <HashRouter> {/* 👈 여기도 변경 */}
-        <AppProvider>
-          <ToastProvider>
+        <ToastProvider>
+          <AppProvider>
             <App />
-          </ToastProvider>
-        </AppProvider>
+          </AppProvider>
+        </ToastProvider>
       </HashRouter>
     </React.StrictMode>
   </AppErrorBoundary>
