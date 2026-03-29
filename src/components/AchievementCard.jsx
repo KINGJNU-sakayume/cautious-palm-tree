@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
 import ProgressBar from './ProgressBar.jsx'
 import { formatDate, formatDateShort, conditionSummaryText, getConditionTarget, renderTemplate } from '@/utils/formatters.js'
-import { useUserSettings } from '@/hooks/useUserSettings.js'
 
 // Tier fill colors for the progress bar
 const TIER_COLORS = {
@@ -33,7 +32,6 @@ function LockIcon({ className = '' }) {
 export default function AchievementCard({ achievement, onClick }) {
   const [checklistOpen, setChecklistOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const { settings } = useUserSettings()
 
   const isHiddenLocked = achievement.isHidden && !achievement.isEarned
   const isTagSet = achievement.condition?.type === 'tag_set_complete'
@@ -120,10 +118,10 @@ export default function AchievementCard({ achievement, onClick }) {
         <div className="mt-2 text-xs text-slate-400">{formatDate(achievement.earnedAt)}</div>
       )}
 
-      {!achievement.isEarned && !isHiddenLocked && achievement.condition && !isTagSet && settings.showConditions && (
+      {!achievement.isEarned && !isHiddenLocked && achievement.condition && !isTagSet && (
         <div className="mt-2">
           <div className="text-xs text-slate-400 mb-1">
-            {progressSummary || conditionSummaryText(achievement.condition, achievement.progress)}
+            {achievement.conditionDisplay || progressSummary || conditionSummaryText(achievement.condition, achievement.progress)}
           </div>
           <ProgressBar
             current={achievement.progress || 0}
@@ -135,10 +133,10 @@ export default function AchievementCard({ achievement, onClick }) {
       )}
 
       {/* Tag-set progress summary (collapsed state) */}
-      {isTagSet && !checklistOpen && !achievement.isEarned && settings.showConditions && (
+      {isTagSet && !checklistOpen && !achievement.isEarned && (
         <div className="mt-2">
           <div className="text-xs text-slate-400 mb-1">
-            {progressSummary || conditionSummaryText(achievement.condition, current)}
+            {achievement.conditionDisplay || progressSummary || conditionSummaryText(achievement.condition, current)}
           </div>
           <ProgressBar
             current={current}

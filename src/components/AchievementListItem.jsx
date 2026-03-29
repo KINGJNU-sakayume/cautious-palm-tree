@@ -2,12 +2,10 @@ import React from 'react'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
 import ProgressBar from './ProgressBar.jsx'
 import { formatDate, conditionSummaryText, typeLabel, getConditionTarget } from '@/utils/formatters.js'
-import { useUserSettings } from '@/hooks/useUserSettings.js'
 
 export default function AchievementListItem({ achievement, onClick, isSelected = false }) {
   const isHiddenLocked = achievement.isHidden && !achievement.isEarned
   const isRare = achievement.rarity < 5
-  const { settings } = useUserSettings()
 
   return (
     <div
@@ -59,10 +57,10 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
           </p>
         )}
 
-        {!achievement.isEarned && !isHiddenLocked && achievement.condition && settings.showConditions && (
+        {!achievement.isEarned && !isHiddenLocked && achievement.condition && (
           <div className="mt-1.5 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">{conditionSummaryText(achievement.condition, achievement.progress)}</span>
+              <span className="text-xs text-slate-400">{achievement.conditionDisplay || conditionSummaryText(achievement.condition, achievement.progress)}</span>
               {achievement.condition.target && (
                 <span className="text-xs text-slate-400">
                   {achievement.progress || 0} / {getConditionTarget(achievement.condition)}
