@@ -277,7 +277,14 @@ export function computeProgressFull(achievement, allRecords) {
     case 'tag_set_complete': {
       const seen = new Set(categoryRecords.flatMap(r => r.tags || []))
       const completedTags = condition.tags.filter(t => seen.has(t))
-      return { progress: completedTags.length, completedTags }
+      const completedDates = {}
+      for (const tag of completedTags) {
+        const dates = categoryRecords
+          .filter(r => (r.tags || []).includes(tag))
+          .map(r => r.date)
+        completedDates[tag] = dates.sort()[0]
+      }
+      return { progress: completedTags.length, completedTags, completedDates }
     }
 
     case 'composite': {

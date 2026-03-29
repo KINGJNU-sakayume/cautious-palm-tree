@@ -94,6 +94,7 @@ function appReducer(state, action) {
             ...a,
             progress: update.progress,
             ...(update.completedTags !== undefined ? { completedTags: update.completedTags } : {}),
+            ...(update.completedDates !== undefined ? { completedDates: update.completedDates } : {}),
           }
         }),
       }
@@ -222,6 +223,20 @@ export function AppProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
+  // ── Post-bootstrap: recompute completedTags/completedDates for tag_set achievements ──
+  useEffect(() => {
+    if (loading) return
+    const tagSetAchievements = state.achievements.filter(
+      a => a.condition?.type === 'tag_set_complete' && !a._softDeleted
+    )
+    if (tagSetAchievements.length === 0) return
+    const updates = tagSetAchievements.map(a => {
+      const { progress, completedTags, completedDates } = computeProgressFull(a, state.records)
+      return { id: a.id, progress, completedTags, completedDates }
+    })
+    dispatch({ type: 'UPDATE_ACHIEVEMENTS_PROGRESS', updates })
+  }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Category actions ────────────────────────────────────────────────
   const addCategory = useCallback(async (categoryData) => {
     const category = {
@@ -326,8 +341,8 @@ export function AppProvider({ children }) {
     const progressUpdates = state.achievements
       .filter(a => (a.categoryId === newRecord.categoryId || !a.categoryId) && !a.isEarned && a.type !== 'meta' && !unlockedIds.includes(a.id))
       .map(a => {
-        const { progress, completedTags } = computeProgressFull(a, nextRecords)
-        return { id: a.id, progress, completedTags }
+        const { progress, completedTags, completedDates } = computeProgressFull(a, nextRecords)
+        return { id: a.id, progress, completedTags, completedDates }
       })
     if (progressUpdates.length > 0) {
       dispatch({ type: 'UPDATE_ACHIEVEMENTS_PROGRESS', updates: progressUpdates })

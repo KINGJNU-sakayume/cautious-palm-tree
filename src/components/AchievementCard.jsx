@@ -42,7 +42,14 @@ export default function AchievementCard({ achievement, onClick }) {
 
   const completedTags = achievement.completedTags ?? []
 
-  const displayedTags = showAll ? tags : tags.slice(0, 9)
+  const sortedTags = [...tags].sort((a, b) => {
+    const aDone = completedTags.includes(a)
+    const bDone = completedTags.includes(b)
+    if (aDone && !bDone) return -1
+    if (!aDone && bDone) return 1
+    return 0
+  })
+  const displayedTags = showAll ? sortedTags : sortedTags.slice(0, 9)
 
   const expandTitle = achievement.expandTitle
     ? renderTemplate(achievement.expandTitle, { current, total })
