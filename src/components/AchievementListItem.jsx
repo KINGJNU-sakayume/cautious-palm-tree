@@ -35,14 +35,14 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span
-            className={`font-bold text-sm ${
+            className={`font-medium text-type-card ${
               !achievement.isEarned ? 'text-slate-400' : 'text-slate-900'
             } ${achievement.isEarned ? '' : 'grayscale'}`}
           >
             {isHiddenLocked ? '???' : achievement.title}
           </span>
           {isRare && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-medium uppercase tracking-widest text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded">
               희귀
             </span>
           )}
@@ -57,22 +57,26 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
           </p>
         )}
 
-        {!achievement.isEarned && !isHiddenLocked && achievement.condition && (
+        {!isHiddenLocked && achievement.condition && (
           <div className="mt-1.5 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">{achievement.conditionDisplay || conditionSummaryText(achievement.condition, achievement.progress)}</span>
-              {achievement.condition.target && (
+              <span className={`text-xs transition-colors duration-[400ms] ${achievement.isEarned ? 'text-green-600' : 'text-slate-400'}`}>
+                {achievement.conditionDisplay || conditionSummaryText(achievement.condition, achievement.progress)}
+              </span>
+              {!achievement.isEarned && achievement.condition.target && (
                 <span className="text-xs text-slate-400">
                   {achievement.progress || 0} / {getConditionTarget(achievement.condition)}
                 </span>
               )}
             </div>
-            <ProgressBar
-              current={achievement.progress || 0}
-              target={getConditionTarget(achievement.condition)}
-              tier={achievement.tier}
-              heightClass="h-2"
-            />
+            {!achievement.isEarned && (
+              <ProgressBar
+                current={achievement.progress || 0}
+                target={getConditionTarget(achievement.condition)}
+                tier={achievement.tier}
+                heightClass="h-2"
+              />
+            )}
           </div>
         )}
 

@@ -92,7 +92,7 @@ export default function FilterBar({ filters, onChange }) {
             type="button"
             onClick={() => onChange({ ...filters, type: t })}
             className={[
-              'px-3 py-1 rounded-md text-xs font-semibold capitalize transition-colors',
+              'px-3 py-1 rounded-md text-xs font-medium capitalize transition-colors',
               filters.type === t
                 ? 'bg-white text-primary shadow-sm'
                 : 'text-slate-500 hover:text-slate-700',

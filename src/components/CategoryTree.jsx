@@ -78,12 +78,12 @@ function MoveToPopup({ nodeId, x, y, onClose, onSelect }) {
       style={{ top: clampedY, left: clampedX }}
     >
       <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Move to…</span>
+        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Move to…</span>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-sm leading-none">✕</button>
       </div>
       <button
         onClick={() => onSelect(null)}
-        className="w-full text-left px-3 py-2.5 text-sm text-primary font-semibold hover:bg-primary/5 flex items-center gap-2 border-b border-slate-100"
+        className="w-full text-left px-3 py-2.5 text-sm text-primary font-medium hover:bg-primary/5 flex items-center gap-2 border-b border-slate-100"
       >
         <span className="text-base leading-none">↑</span>
         <span>Make Root (no parent)</span>
@@ -177,7 +177,7 @@ function DefaultSettingsPanel({ categoryId, categoryName, x, y, onClose }) {
       style={{ top: clampedY, left: clampedX }}
     >
       <div className="px-3 py-2.5 border-b border-slate-100 flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-600 truncate">기본 설정 — {categoryName}</span>
+        <span className="text-xs font-medium text-slate-600 truncate">기본 설정 — {categoryName}</span>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
           <XIcon size={13} />
         </button>
@@ -186,7 +186,7 @@ function DefaultSettingsPanel({ categoryId, categoryName, x, y, onClose }) {
       <div className="p-3 space-y-3">
         {/* Default unit */}
         <div>
-          <div className="text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">기본 단위</div>
+          <div className="text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">기본 단위</div>
           {defaults.defaultUnit ? (
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
               {defaults.defaultUnit}
@@ -221,7 +221,7 @@ function DefaultSettingsPanel({ categoryId, categoryName, x, y, onClose }) {
 
         {/* Default tags */}
         <div>
-          <div className="text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">기본 태그</div>
+          <div className="text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">기본 태그</div>
           <div className="flex flex-wrap gap-1 mb-1.5">
             {defaults.defaultTags.map(tag => (
               <span key={tag} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
@@ -413,7 +413,7 @@ function TreeNode({
         className={[
           'group flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors',
           isSelected
-            ? 'bg-primary/10 border-l-2 border-primary text-primary font-semibold'
+            ? 'bg-primary/10 border-l-2 border-primary text-primary font-medium'
             : 'hover:bg-slate-100 text-slate-700',
         ].join(' ')}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}

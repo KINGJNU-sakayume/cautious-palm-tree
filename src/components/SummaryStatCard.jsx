@@ -9,12 +9,12 @@ export default function SummaryStatCard({ label, value, icon, accent, sub }) {
             ? <span className="text-lg leading-none">{icon}</span>
             : <span className="flex-shrink-0 text-slate-400">{icon}</span>
         )}
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 truncate">
           {label}
         </span>
       </div>
       <div
-        className="text-2xl font-extrabold leading-tight truncate"
+        className="text-2xl font-medium leading-tight truncate"
         style={accent ? { color: accent } : {}}
       >
         {value}

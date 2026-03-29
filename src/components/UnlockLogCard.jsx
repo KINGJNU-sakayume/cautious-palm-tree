@@ -25,12 +25,12 @@ export default function UnlockLogCard({ achievement }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+          <span className="text-[10px] font-medium uppercase tracking-widest text-amber-600">
             Achievement Unlocked
           </span>
           <TrophyTierBadge tier={achievement.tier} size="xs" />
         </div>
-        <div className="text-sm font-bold text-slate-800 truncate">{achievement.title}</div>
+        <div className="text-sm font-medium text-slate-800 truncate">{achievement.title}</div>
 
         {/* Unlock condition — one-line summary */}
         {conditionText && (

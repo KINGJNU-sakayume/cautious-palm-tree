@@ -55,7 +55,7 @@ export default function ConfirmDialog({ open, title, body, confirmLabel = 'ì‚­ì 
 
       {/* Dialog panel */}
       <div className="relative bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
-        <h2 id="confirm-dialog-title" className="text-base font-bold text-slate-900">
+        <h2 id="confirm-dialog-title" className="text-base font-medium text-slate-900">
           {title}
         </h2>
         {body && (

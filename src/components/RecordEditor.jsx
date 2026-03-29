@@ -29,6 +29,8 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
   })
   const [memo, setMemo] = useState(() => initialRecord?.memo ?? '')
   const [photoUrl, setPhotoUrl] = useState(() => initialRecord?.photoUrl ?? '')
+  const [photoTab, setPhotoTab] = useState('url')
+  const [photoPreview, setPhotoPreview] = useState(() => initialRecord?.photoUrl ?? '')
   const [tags, setTags] = useState(() => {
     if (initialRecord?.tags != null) return initialRecord.tags
     if (!isEditing && selectedCategoryId) {
@@ -65,6 +67,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
     setUnit(initialRecord?.unit ?? '')
     setMemo(initialRecord?.memo ?? '')
     setPhotoUrl(initialRecord?.photoUrl ?? '')
+    setPhotoPreview(initialRecord?.photoUrl ?? '')
     setTags(initialRecord?.tags ?? [])
     setTagInput('')
     setUnitChangedFromDefault(false)
@@ -85,6 +88,17 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
     unit.trim() !== '' &&
     activeDefaults &&
     unit !== activeDefaults.defaultUnit
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setPhotoUrl(ev.target.result)
+      setPhotoPreview(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const commitTag = () => {
     const trimmed = tagInput.trim()
@@ -195,7 +209,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
     <>
     <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl shadow-card p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-slate-500">
           {isEditing ? '기록 수정 / 삭제' : '기록 추가'}
         </h3>
         {onClose && (
@@ -213,7 +227,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
       {/* Category display */}
       {!isLeaf && children.length > 0 && (
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
             하위 카테고리에 저장
           </label>
           <div className="flex flex-wrap gap-2">
@@ -248,7 +262,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
       {/* Date / Value / Unit */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
             날짜 <span className="text-red-400">*</span>
           </label>
           <input
@@ -260,7 +274,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
             값
           </label>
           <input
@@ -273,7 +287,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
             단위
           </label>
           <input
@@ -310,7 +324,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
 
       {/* Memo */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+        <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
           메모
         </label>
         <textarea
@@ -322,23 +336,53 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
         />
       </div>
 
-      {/* Photo URL */}
+      {/* Photo */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
-          사진 URL
+        <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
+          사진
         </label>
-        <input
-          type="url"
-          value={photoUrl}
-          onChange={e => setPhotoUrl(e.target.value)}
-          placeholder="https://…"
-          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
-        />
+        {/* Tab switcher */}
+        <div className="flex gap-1 mb-2">
+          {[{ id: 'url', label: 'URL' }, { id: 'file', label: '파일 업로드' }].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPhotoTab(tab.id)}
+              className={[
+                'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                photoTab === tab.id
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+              ].join(' ')}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {photoTab === 'url' ? (
+          <input
+            type="url"
+            value={photoUrl}
+            onChange={e => { setPhotoUrl(e.target.value); setPhotoPreview(e.target.value) }}
+            placeholder="https://…"
+            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
+          />
+        ) : (
+          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
+            <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+            <span className="text-xs text-slate-400">클릭하거나 이미지를 드래그하세요</span>
+          </label>
+        )}
+
+        {photoPreview && (
+          <img src={photoPreview} alt="미리보기" className="mt-2 w-full max-h-32 object-cover rounded-lg" />
+        )}
       </div>
 
       {/* Tags — inline chips + input, no separate Add button */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+        <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
           태그
         </label>
         <div className="flex flex-wrap items-center gap-1.5 border border-slate-300 rounded-lg px-2 py-1.5 focus-within:border-primary transition-colors min-h-[38px]">
@@ -377,7 +421,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
           type="submit"
           disabled={saving || !effectiveCategoryId}
           className={[
-            'px-6 py-2.5 rounded-lg font-semibold text-sm transition-all',
+            'px-6 py-2.5 rounded-lg font-medium text-sm transition-all',
             saving || !effectiveCategoryId
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
               : 'bg-primary text-white hover:bg-primary-dark active:scale-95',
@@ -389,7 +433,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
           <button
             type="button"
             onClick={handleDelete}
-            className="px-4 py-2.5 rounded-lg font-semibold text-sm border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400 transition-colors active:scale-95"
+            className="px-4 py-2.5 rounded-lg font-medium text-sm border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400 transition-colors active:scale-95"
           >
             삭제
           </button>

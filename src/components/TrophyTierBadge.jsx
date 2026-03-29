@@ -51,7 +51,7 @@ const SIZE_CLASSES = {
   xs: 'text-[9px] px-1.5 py-0.5 rounded',
   sm: 'text-[10px] px-2 py-0.5 rounded',
   md: 'text-xs px-2.5 py-1 rounded-md',
-  lg: 'text-sm px-3 py-1.5 rounded-md font-semibold',
+  lg: 'text-sm px-3 py-1.5 rounded-md font-medium',
 }
 
 export default function TrophyTierBadge({ tier, size = 'sm', showLabel = true, className = '' }) {
@@ -61,7 +61,7 @@ export default function TrophyTierBadge({ tier, size = 'sm', showLabel = true, c
   const label = showLabel ? tierLabel(tier) : ''
 
   const classes = [
-    'inline-flex items-center font-semibold tracking-wide uppercase',
+    'inline-flex items-center font-medium tracking-wide uppercase',
     sizeClass,
     styles.bg,
     styles.text,

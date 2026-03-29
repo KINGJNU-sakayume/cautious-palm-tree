@@ -59,7 +59,7 @@ function PinSlot({ index, achievement, onClick }) {
     return (
       <button
         onClick={onClick}
-        className="flex-1 min-w-0 min-h-[96px] flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300 transition-colors cursor-pointer"
+        className="flex-1 min-w-0 min-h-[96px] flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
         aria-label={`슬롯 ${index + 1} 추가`}
       >
         <PlusIcon size={18} />
@@ -74,7 +74,7 @@ function PinSlot({ index, achievement, onClick }) {
     <button
       onClick={onClick}
       className={[
-        'flex-1 min-w-0 min-h-[96px] flex flex-col gap-2 p-3 rounded-xl border-2 border-slate-700 bg-[#252b3d] hover:border-slate-500 transition-all cursor-pointer text-left',
+        'flex-1 min-w-0 min-h-[96px] flex flex-col gap-2 p-3 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-slate-300 transition-all cursor-pointer text-left',
         isLegendary ? 'pin-slot-legendary' : '',
       ].filter(Boolean).join(' ')}
       aria-label={`슬롯 ${index + 1}: ${achievement.title} — 편집`}
@@ -84,7 +84,7 @@ function PinSlot({ index, achievement, onClick }) {
         className="w-8 h-8 rounded-md flex-shrink-0"
         style={{ background: color + '33', border: `1.5px solid ${color}66` }}
       />
-      <span className="text-xs font-semibold text-white leading-snug line-clamp-2">
+      <span className="text-xs font-medium text-slate-900 leading-snug line-clamp-2">
         {achievement.title}
       </span>
     </button>
@@ -133,7 +133,7 @@ function PinModal({ slotIndex, pinnedIds, earned, categories, onPin, onClear, on
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-base font-bold text-slate-900">
+          <h2 className="text-type-section font-medium text-slate-900">
             핀 설정 — 슬롯 {slotIndex + 1}
           </h2>
           <button
@@ -163,7 +163,7 @@ function PinModal({ slotIndex, pinnedIds, earned, categories, onPin, onClear, on
               >
                 <TrophyTierBadge tier={a.tier} size="xs" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{a.title}</p>
+                  <p className="text-sm font-medium text-slate-800 truncate">{a.title}</p>
                   <p className="text-xs text-slate-400 truncate">{getCategoryName(a.categoryId)}</p>
                 </div>
                 <span className="text-xs text-slate-400 flex-shrink-0">{formatDate(a.earnedAt)}</span>
@@ -177,7 +177,7 @@ function PinModal({ slotIndex, pinnedIds, earned, categories, onPin, onClear, on
           <div className="border-t border-slate-100 px-5 py-3">
             <button
               onClick={() => onClear(slotIndex)}
-              className="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors"
+              className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
             >
               슬롯 비우기
             </button>
@@ -322,7 +322,7 @@ export default function AchievementShowcase() {
       <div className="max-w-[960px] mx-auto px-6 py-6 space-y-6">
 
         {/* ── Page Title ───────────────────────────────────────────── */}
-        <h1 className="text-2xl font-extrabold text-slate-900">업적 쇼케이스</h1>
+        <h1 className="text-type-page font-medium text-slate-900">업적 쇼케이스</h1>
 
         {/* ── Stats Row ────────────────────────────────────────────── */}
         <section className="bg-white border border-slate-200 rounded-2xl shadow-sm px-8 py-6">
@@ -331,12 +331,12 @@ export default function AchievementShowcase() {
               <div key={i} className="relative group text-center">
                 <div className="flex justify-center mb-1">{stat.icon}</div>
                 <div
-                  className="text-2xl font-extrabold tracking-tight truncate"
+                  className="text-type-page font-medium tracking-tight truncate"
                   style={stat.accent ? { color: stat.accent } : { color: '#1e293b' }}
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1 flex items-center justify-center gap-1">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mt-1 flex items-center justify-center gap-1">
                   {stat.label}
                   {stat.tooltip && (
                     <span className="text-slate-300 text-[10px] leading-none cursor-help select-none">ⓘ</span>
@@ -355,7 +355,7 @@ export default function AchievementShowcase() {
 
         {/* ── Tier Chips Row ───────────────────────────────────────── */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">티어별</span>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide mr-1">티어별</span>
           {TIERS.map(tier => {
             const count = tierCounts[tier] || 0
             const isActive = activeTierFilter === tier
@@ -373,18 +373,15 @@ export default function AchievementShowcase() {
                 title={`${tierLabel(tier)} 업적 필터`}
               >
                 <TrophyTierBadge tier={tier} size="xs" />
-                <span className="text-sm font-bold text-slate-700">{count}</span>
+                <span className="text-sm font-medium text-slate-700">{count}</span>
               </button>
             )
           })}
         </div>
 
         {/* ── Pinned Achievements ──────────────────────────────────── */}
-        <section
-          className="rounded-xl"
-          style={{ background: '#1a1f2e', borderRadius: 12, padding: '16px 20px' }}
-        >
-          <h2 className="text-sm font-bold text-white mb-3">핀된 업적</h2>
+        <section className="rounded-xl bg-white border border-slate-200 shadow-card px-5 py-4">
+          <h2 className="text-type-section font-medium text-slate-900 mb-3">핀된 업적</h2>
 
           {/* Desktop: flex row; Mobile: 3+2 grid via CSS class */}
           <div className="pin-slots-grid">
@@ -414,10 +411,10 @@ export default function AchievementShowcase() {
 
           {/* Left: Recent Achievements */}
           <section className="bg-white border border-slate-200 rounded-2xl px-5 py-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500 mb-3">
               최근 획득
               {activeTierFilter && (
-                <span className="ml-1 normal-case font-semibold text-primary">
+                <span className="ml-1 normal-case font-medium text-primary">
                   · {tierLabel(activeTierFilter)}
                 </span>
               )}
@@ -435,7 +432,7 @@ export default function AchievementShowcase() {
                     className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
                   >
                     <TrophyTierBadge tier={a.tier} size="xs" />
-                    <span className="text-sm font-semibold text-slate-800 flex-1 truncate">{a.title}</span>
+                    <span className="text-sm font-medium text-slate-800 flex-1 truncate">{a.title}</span>
                     <span className="text-xs text-slate-400 flex-shrink-0">{formatDate(a.earnedAt)}</span>
                   </div>
                 ))}
@@ -445,7 +442,7 @@ export default function AchievementShowcase() {
             {!showAllRecent && totalRecentCount > 8 && (
               <button
                 onClick={() => setShowAllRecent(true)}
-                className="mt-3 text-xs text-primary font-semibold hover:underline w-full text-center"
+                className="mt-3 text-xs text-primary font-medium hover:underline w-full text-center"
               >
                 더 보기 ({totalRecentCount - 8}개 더)
               </button>
@@ -454,7 +451,7 @@ export default function AchievementShowcase() {
 
           {/* Right: Category Progress */}
           <section className="bg-white border border-slate-200 rounded-2xl px-5 py-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500 mb-3">
               카테고리 진행률
             </h2>
 
@@ -463,7 +460,7 @@ export default function AchievementShowcase() {
               <button
                 onClick={() => setActiveCatFilter(null)}
                 className={[
-                  'px-3 py-1 rounded-full text-xs font-semibold border transition-all',
+                  'px-3 py-1 rounded-full text-xs font-medium border transition-all',
                   !activeCatFilter
                     ? 'bg-primary text-white border-primary'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50',
@@ -476,7 +473,7 @@ export default function AchievementShowcase() {
                   key={cat.id}
                   onClick={() => setActiveCatFilter(prev => prev === cat.id ? null : cat.id)}
                   className={[
-                    'px-3 py-1 rounded-full text-xs font-semibold border transition-all',
+                    'px-3 py-1 rounded-full text-xs font-medium border transition-all',
                     activeCatFilter === cat.id
                       ? 'bg-primary text-white border-primary'
                       : 'border-slate-200 text-slate-600 hover:bg-slate-50',

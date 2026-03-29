@@ -85,11 +85,11 @@ export default function AchievementCard({ achievement, onClick }) {
           <div className="flex items-center gap-2 mb-1.5">
             <TrophyTierBadge tier={achievement.tier} size="xs" />
             {achievement.rarity < 5 && achievement.isEarned && (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">희귀</span>
+              <span className="text-[10px] font-medium uppercase tracking-widest text-amber-500">희귀</span>
             )}
           </div>
           <div
-            className={`font-bold text-sm leading-snug ${
+            className={`font-medium text-type-card leading-snug ${
               !achievement.isEarned ? 'text-slate-500' : 'text-slate-900'
             }`}
           >
@@ -118,9 +118,15 @@ export default function AchievementCard({ achievement, onClick }) {
         <div className="mt-2 text-xs text-slate-400">{formatDate(achievement.earnedAt)}</div>
       )}
 
+      {achievement.isEarned && !isHiddenLocked && achievement.condition && !isTagSet && (
+        <div className="mt-1 text-xs text-green-600 transition-colors duration-[400ms]">
+          {achievement.conditionDisplay || progressSummary || conditionSummaryText(achievement.condition, achievement.progress)}
+        </div>
+      )}
+
       {!achievement.isEarned && !isHiddenLocked && achievement.condition && !isTagSet && (
         <div className="mt-2">
-          <div className="text-xs text-slate-400 mb-1">
+          <div className="text-xs text-slate-400 mb-1 transition-colors duration-[400ms]">
             {achievement.conditionDisplay || progressSummary || conditionSummaryText(achievement.condition, achievement.progress)}
           </div>
           <ProgressBar
@@ -135,7 +141,7 @@ export default function AchievementCard({ achievement, onClick }) {
       {/* Tag-set progress summary (collapsed state) */}
       {isTagSet && !checklistOpen && !achievement.isEarned && (
         <div className="mt-2">
-          <div className="text-xs text-slate-400 mb-1">
+          <div className="text-xs text-slate-400 mb-1 transition-colors duration-[400ms]">
             {achievement.conditionDisplay || progressSummary || conditionSummaryText(achievement.condition, current)}
           </div>
           <ProgressBar
@@ -153,7 +159,7 @@ export default function AchievementCard({ achievement, onClick }) {
           <div className="mt-3 border-t border-slate-100 pt-3">
             {/* Checklist header */}
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-600">{expandTitle}</span>
+              <span className="text-xs font-medium text-slate-600">{expandTitle}</span>
               <span className="text-[10px] text-slate-400">
                 <span className="text-green-600">●</span> 완료 <span className="ml-1 text-slate-300">○</span> 미완료
               </span>
@@ -188,7 +194,7 @@ export default function AchievementCard({ achievement, onClick }) {
                       <span className="w-4 h-4 flex-shrink-0 border border-slate-300 rounded mt-px" />
                     )}
                     <div className="min-w-0">
-                      <div className={`leading-tight truncate ${done ? 'font-bold' : 'font-normal'}`}>
+                      <div className={`leading-tight truncate ${done ? 'font-medium' : 'font-normal'}`}>
                         {tag}
                       </div>
                       {done && completedDate && (

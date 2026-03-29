@@ -31,7 +31,7 @@ export default function RecordCard({ record, showDate = false, compact = false, 
           )}
           <div className="text-xs text-slate-400 truncate mb-1">{pathLabel}</div>
           {(record.value != null || record.unit) && (
-            <div className="text-base font-bold text-slate-800">
+            <div className="text-base font-medium text-slate-800">
               {record.value != null ? record.value : '—'}
               {record.unit && <span className="text-sm font-medium text-slate-500 ml-1">{record.unit}</span>}
             </div>

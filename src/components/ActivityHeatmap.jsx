@@ -70,7 +70,7 @@ export default function ActivityHeatmap({
         >
           ‹
         </button>
-        <span className="text-xs font-semibold text-slate-700">
+        <span className="text-xs font-medium text-slate-700">
           {formatMonthYear(currentMonth + '-01')}
         </span>
         <button
@@ -86,7 +86,7 @@ export default function ActivityHeatmap({
         {DAY_HEADERS.map(d => (
           <div
             key={d}
-            className="text-center font-semibold text-slate-400 uppercase py-0.5"
+            className="text-center font-medium text-slate-400 uppercase py-0.5"
             style={{ fontSize: 6 }}
           >
             {d}

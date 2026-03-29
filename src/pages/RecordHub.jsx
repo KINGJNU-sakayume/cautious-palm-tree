@@ -209,7 +209,7 @@ export default function RecordHub() {
         {/* Panel header — always visible */}
         <div className="flex items-center justify-between px-3 pt-4 pb-2">
           {sidebarOpen && (
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">활동</h2>
+            <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">활동</h2>
           )}
           <button
             onClick={() => setSidebarOpen(v => !v)}
@@ -240,7 +240,7 @@ export default function RecordHub() {
 
             {/* Monthly summary stats */}
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-slate-700">
+              <h3 className="text-sm font-medium text-slate-700">
                 월간 요약
               </h3>
               <div className="flex flex-col gap-2">
@@ -252,7 +252,7 @@ export default function RecordHub() {
                 ].map(({ label, value }) => (
                   <div key={label} className="bg-slate-50 rounded-xl px-4 py-3 flex items-center justify-between">
                     <div className="text-xs text-slate-500">{label}</div>
-                    <div className="text-xl font-bold text-slate-800">{value}</div>
+                    <div className="text-xl font-medium text-slate-800">{value}</div>
                   </div>
                 ))}
               </div>
@@ -261,7 +261,7 @@ export default function RecordHub() {
             {/* Quick jump */}
             {monthStats.topDates.length > 0 && (
               <div className="space-y-1.5">
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <h3 className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
                   빠른 이동
                 </h3>
                 <div className="space-y-1">
@@ -291,7 +291,7 @@ export default function RecordHub() {
 
           {/* Page header */}
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-xl font-extrabold text-slate-900 whitespace-nowrap">
+            <h1 className="text-type-page font-medium text-slate-900 whitespace-nowrap">
               기록 허브
               <span className="ml-2 text-sm font-normal text-slate-400">
                 · 전체 {filteredEntries.length}건
@@ -387,7 +387,7 @@ export default function RecordHub() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
               <span className="text-5xl mb-4">📭</span>
-              <p className="text-lg font-semibold">항목이 없습니다</p>
+              <p className="text-lg font-medium">항목이 없습니다</p>
               <p className="text-sm mt-1">필터를 조정해 보세요</p>
             </div>
           )}
