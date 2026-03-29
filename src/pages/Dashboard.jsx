@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
-import Sidebar, { MobileNav } from '@/components/Sidebar.jsx'
+import Sidebar from '@/components/Sidebar.jsx'
 import SummaryStatCard from '@/components/SummaryStatCard.jsx'
 import RecordEditor from '@/components/RecordEditor.jsx'
 import RecordCard from '@/components/RecordCard.jsx'
@@ -8,7 +8,7 @@ import AchievementCard from '@/components/AchievementCard.jsx'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import ProgressBar from '@/components/ProgressBar.jsx'
 import {
-  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon,
+  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon, MenuIcon, XIcon,
 } from '@/components/Icons.jsx'
 import { getCategoryPath, getDirectChildren, getDescendantIds } from '@/utils/categoryTree.js'
 import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     categories.find(c => c.parentId === null)?.id || null
   )
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null)
   const [quickLogOpen, setQuickLogOpen] = useState(false)
 
@@ -121,27 +122,42 @@ export default function Dashboard() {
   }, [selectedCategoryId])
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Mobile chip bar + bottom sheet — only visible below md */}
-      <div className="md:hidden">
-        <MobileNav
+    <div className="flex h-full min-h-0">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={[
+          'flex-shrink-0 h-full overflow-hidden z-30 transition-transform duration-300',
+          'fixed md:static top-0 left-0 bottom-0',
+          'w-56',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        ].join(' ')}
+      >
+        <Sidebar
           selectedCategoryId={selectedCategoryId}
-          onSelectCategory={setSelectedCategoryId}
+          onSelectCategory={(id) => { setSelectedCategoryId(id); setSidebarOpen(false) }}
         />
       </div>
-
-      <div className="flex flex-1 min-h-0">
-        {/* Desktop sidebar — hidden on mobile */}
-        <div className="hidden md:block flex-shrink-0 h-full overflow-hidden w-[240px]">
-          <Sidebar
-            selectedCategoryId={selectedCategoryId}
-            onSelectCategory={setSelectedCategoryId}
-          />
-        </div>
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto bg-neutral-50 scrollbar-thin">
         <div className="px-6 py-6 space-y-6">
+          {/* Mobile sidebar toggle */}
+          <button
+            className="md:hidden flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 -mt-2 -ml-1 mb-0 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors self-start"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <MenuIcon size={18} />
+            <span>카테고리</span>
+          </button>
+
           {/* Header */}
           {selectedCategory ? (
             <>
@@ -321,7 +337,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      </div>{/* end flex flex-1 min-h-0 */}
     </div>
   )
 }
