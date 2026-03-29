@@ -7,6 +7,8 @@ function toastReducer(state, action) {
   switch (action.type) {
     case 'ADD_TOAST':
       return [...state, { id: action.id, achievement: action.achievement, isLeaving: false }]
+    case 'ADD_ERROR_TOAST':
+      return [...state, { ...action.toast, isLeaving: false }]
     case 'ADD_TOASTS':
       return [
         ...state,
@@ -49,8 +51,14 @@ export function ToastProvider({ children }) {
     })
   }, [addToast])
 
+  const showError = useCallback((message) => {
+    const id = crypto.randomUUID()
+    dispatch({ type: 'ADD_ERROR_TOAST', toast: { id, tier: 'error', title: '오류', body: message } })
+    timers.current.set(id, setTimeout(() => dismissToast(id), 4500))
+  }, [dismissToast])
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, addToasts, dismissToast }}>
+    <ToastContext.Provider value={{ toasts, addToast, addToasts, dismissToast, showError }}>
       {children}
     </ToastContext.Provider>
   )
