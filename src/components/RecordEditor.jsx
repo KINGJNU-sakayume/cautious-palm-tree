@@ -5,11 +5,14 @@ import { useCategoryDefaults } from '@/hooks/useCategoryDefaults.js'
 import { todayStr } from '@/utils/formatters.js'
 import { getCategoryPath, getDirectChildren, isLeafCategory } from '@/utils/categoryTree.js'
 import { XIcon, FolderOpenIcon } from '@/components/Icons.jsx'
+import { useConfirm } from '@/hooks/useConfirm.jsx'
+import { RECORD_SUBMIT_DELAY_MS, SAVED_INDICATOR_MS } from '@/constants/timing.js'
 
 export default function RecordEditor({ selectedCategoryId, initialRecord = null, onClose, onDelete }) {
   const { categories, saveRecord, updateRecord } = useApp()
   const { addToasts } = useToast()
   const { getDefaults, setDefaultUnit } = useCategoryDefaults()
+  const { confirmDialog, confirm } = useConfirm()
 
   const isEditing = initialRecord != null
 
@@ -127,7 +130,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
     if (!effectiveCategoryId) return
 
     setSaving(true)
-    await new Promise(r => setTimeout(r, 200))
+    await new Promise(r => setTimeout(r, RECORD_SUBMIT_DELAY_MS))
 
     if (isEditing) {
       await updateRecord({
@@ -177,18 +180,19 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
       setSaved(true)
       setUnitChangedFromDefault(false)
       setDefaultSaved(false)
-      setTimeout(() => setSaved(false), 2000)
+      setTimeout(() => setSaved(false), SAVED_INDICATOR_MS)
     }
   }
 
   const handleDelete = async () => {
     if (!initialRecord?.id) return
-    if (window.confirm('이 기록을 삭제할까요?')) {
-      await onDelete(initialRecord.id)
-    }
+    const confirmed = await confirm('기록 삭제', '이 기록을 삭제할까요?')
+    if (!confirmed) return
+    await onDelete(initialRecord.id)
   }
 
   return (
+    <>
     <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl shadow-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
@@ -398,5 +402,7 @@ export default function RecordEditor({ selectedCategoryId, initialRecord = null,
         )}
       </div>
     </form>
+    {confirmDialog}
+    </>
   )
 }

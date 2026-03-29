@@ -44,6 +44,16 @@ export default defineConfig({
     }),
   ],
   base: '/cautious-palm-tree/', // 👈 이 줄이 반드시 있어야 합니다!
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':    ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

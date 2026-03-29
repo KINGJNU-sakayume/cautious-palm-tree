@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
+import { useConfirm } from '@/hooks/useConfirm.jsx'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import CategoryTreeSelector from '@/components/CategoryTreeSelector.jsx'
 import ConditionBuilder from '@/components/ConditionBuilder.jsx'
@@ -60,6 +61,7 @@ function LockIcon({ className = '' }) {
 
 export default function AchievementManagement() {
   const { categories, achievements, addAchievement, updateAchievement, deleteAchievement } = useApp()
+  const { confirmDialog, confirm } = useConfirm()
   const [selectedId, setSelectedId] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
@@ -127,12 +129,12 @@ export default function AchievementManagement() {
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId || selectedId === '__new__') return
-    if (window.confirm('이 업적을 삭제할까요?')) {
-      deleteAchievement(selectedId)
-      closeSlideOver()
-    }
+    const confirmed = await confirm('업적 삭제', '이 업적을 삭제할까요?')
+    if (!confirmed) return
+    deleteAchievement(selectedId)
+    closeSlideOver()
   }
 
   const getCategoryPathLabel = (catId) => {
@@ -615,6 +617,7 @@ export default function AchievementManagement() {
           </>
         )}
       </div>
+      {confirmDialog}
     </div>
   )
 }
