@@ -174,6 +174,7 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, emptyState)
   const [loading, setLoading] = useState(true)
   const [dbError, setDbError] = useState(null)
+  const { showError } = useToast()
 
   // ── Bootstrap: load from Supabase on mount ───────────────────────────
   useEffect(() => {
@@ -246,7 +247,7 @@ export function AppProvider({ children }) {
     }
     dispatch({ type: 'MANAGE_CATEGORY', op: 'add', category })
     try { await upsertCategory(category) }
-    catch (err) { console.error('addCategory DB error:', err) }
+    catch (err) { console.error('addCategory DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
     return category
   }, [])
 
@@ -254,7 +255,7 @@ export function AppProvider({ children }) {
     dispatch({ type: 'MANAGE_CATEGORY', op: 'rename', id, name })
     const cat = state.categories.find(c => c.id === id)
     try { await upsertCategory({ id, name, parentId: cat?.parentId ?? null }) }
-    catch (err) { console.error('renameCategory DB error:', err) }
+    catch (err) { console.error('renameCategory DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [state.categories])
 
   /**
@@ -267,13 +268,13 @@ export function AppProvider({ children }) {
     dispatch({ type: 'MANAGE_CATEGORY', op: 'reparent', id, parentId: newParentId ?? null })
     const cat = state.categories.find(c => c.id === id)
     try { await upsertCategory({ ...cat, parentId: newParentId ?? null }) }
-    catch (err) { console.error('reparentCategory DB error:', err) }
+    catch (err) { console.error('reparentCategory DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [state.categories])
 
   const deleteCategory = useCallback(async (id) => {
     dispatch({ type: 'DELETE_CATEGORY', id })
     try { await dbDeleteCategory(id) }
-    catch (err) { console.error('deleteCategory DB error:', err) }
+    catch (err) { console.error('deleteCategory DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [])
 
   // ── Achievement actions ─────────────────────────────────────────────
@@ -287,20 +288,20 @@ export function AppProvider({ children }) {
     }
     dispatch({ type: 'ADD_ACHIEVEMENT', achievement })
     try { await upsertAchievement(achievement) }
-    catch (err) { console.error('addAchievement DB error:', err) }
+    catch (err) { console.error('addAchievement DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
     return achievement
   }, [])
 
   const updateAchievement = useCallback(async (achievement) => {
     dispatch({ type: 'UPDATE_ACHIEVEMENT', achievement })
     try { await upsertAchievement(achievement) }
-    catch (err) { console.error('updateAchievement DB error:', err) }
+    catch (err) { console.error('updateAchievement DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [])
 
   const deleteAchievement = useCallback(async (id) => {
     dispatch({ type: 'DELETE_ACHIEVEMENT', id })
     try { await dbDeleteAchievement(id) }
-    catch (err) { console.error('deleteAchievement DB error:', err) }
+    catch (err) { console.error('deleteAchievement DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [])
 
   // ── Record save flow ────────────────────────────────────────────────
@@ -379,6 +380,7 @@ export function AppProvider({ children }) {
       }
     } catch (err) {
       console.error('saveRecord DB error:', err)
+      showError(`저장 실패: ${err.message}. 다시 시도해주세요.`)
     }
 
     return newRecord
@@ -387,13 +389,13 @@ export function AppProvider({ children }) {
   const updateRecord = useCallback(async (recordData) => {
     dispatch({ type: 'UPDATE_RECORD', record: recordData })
     try { await upsertRecord(recordData) }
-    catch (err) { console.error('updateRecord DB error:', err) }
+    catch (err) { console.error('updateRecord DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [])
 
   const deleteRecord = useCallback(async (id) => {
     dispatch({ type: 'DELETE_RECORD', id })
     try { await dbDeleteRecord(id) }
-    catch (err) { console.error('deleteRecord DB error:', err) }
+    catch (err) { console.error('deleteRecord DB error:', err); showError(`저장 실패: ${err.message}. 다시 시도해주세요.`) }
   }, [])
 
   const value = {
