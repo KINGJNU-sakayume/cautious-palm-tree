@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
+import { useUserSettings } from '@/hooks/useUserSettings.js'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import CategoryTreeSelector from '@/components/CategoryTreeSelector.jsx'
 import ConditionBuilder from '@/components/ConditionBuilder.jsx'
@@ -59,6 +60,7 @@ function LockIcon({ className = '' }) {
 
 export default function AchievementManagement() {
   const { categories, achievements, addAchievement, updateAchievement, deleteAchievement } = useApp()
+  const { settings, updateSettings } = useUserSettings()
   const [selectedId, setSelectedId] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
@@ -205,7 +207,7 @@ export default function AchievementManagement() {
             className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
           />
 
-          {/* Tier + Status dropdowns + reset */}
+          {/* Tier + Status dropdowns + reset + condition toggle */}
           <div className="flex items-center gap-2">
             <select
               value={filterTier}
@@ -224,6 +226,16 @@ export default function AchievementManagement() {
               <option value="earned">획득</option>
               <option value="locked">잠김</option>
             </select>
+            <button
+              onClick={() => updateSettings({ showConditions: !settings.showConditions })}
+              className={`px-2 py-1.5 border rounded-lg text-sm transition-colors ${
+                settings.showConditions
+                  ? 'border-primary text-primary bg-primary/5 hover:bg-primary/10'
+                  : 'border-slate-300 text-slate-500 bg-white hover:bg-slate-50'
+              }`}
+            >
+              {settings.showConditions ? '조건 숨기기' : '조건 표시'}
+            </button>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}

@@ -323,18 +323,18 @@ export function AppProvider({ children }) {
     const unlockedIds = evaluateAchievements(newRecord, nextRecords, state.achievements)
 
     let nextAchievements = state.achievements.map(a =>
-      unlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: todayStr() } : a
+      unlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: newRecord.date } : a
     )
     unlockedIds.forEach(id => {
-      dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
+      dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: newRecord.date })
     })
 
     const metaUnlockedIds = evaluateMetaAchievements(nextAchievements, nextRecords)
     nextAchievements = nextAchievements.map(a =>
-      metaUnlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: todayStr() } : a
+      metaUnlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: newRecord.date } : a
     )
     metaUnlockedIds.forEach(id => {
-      dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
+      dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: newRecord.date })
     })
 
     // Update partial progress for non-earned achievements in this category and cross-category

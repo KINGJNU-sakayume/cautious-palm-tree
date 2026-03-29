@@ -1,6 +1,7 @@
 import React from 'react'
 import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
 import TrophyTierBadge from './TrophyTierBadge.jsx'
+import { useUserSettings } from '@/hooks/useUserSettings.js'
 
 const TIER_BORDER_COLORS = {
   bronze: '#cd7f32',
@@ -14,6 +15,7 @@ const TIER_BORDER_COLORS = {
 export default function UnlockLogCard({ achievement }) {
   const borderColor = TIER_BORDER_COLORS[achievement.tier] || '#0066FF'
   const conditionText = achievement.condition ? conditionSummaryText(achievement.condition) : null
+  const { settings } = useUserSettings()
 
   return (
     <div
@@ -33,7 +35,7 @@ export default function UnlockLogCard({ achievement }) {
         <div className="text-sm font-bold text-slate-800 truncate">{achievement.title}</div>
 
         {/* Unlock condition — one-line summary */}
-        {conditionText && (
+        {conditionText && settings.showConditions && (
           <div className="text-xs text-slate-500 mt-0.5 truncate" title={conditionText}>
             {conditionText}
           </div>
