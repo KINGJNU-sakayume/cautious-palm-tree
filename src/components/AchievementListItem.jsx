@@ -43,7 +43,7 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
           </span>
           {isRare && (
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded">
-              Rare
+              희귀
             </span>
           )}
           <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wide">
@@ -78,7 +78,7 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
 
         {achievement.isEarned && achievement.earnedAt && (
           <div className="text-xs text-green-500 font-medium mt-0.5">
-            Earned {formatDate(achievement.earnedAt)}
+            획득: {formatDate(achievement.earnedAt)}
           </div>
         )}
       </div>
