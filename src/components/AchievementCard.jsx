@@ -40,11 +40,7 @@ export default function AchievementCard({ achievement, onClick }) {
   const total = isTagSet ? tags.length : getConditionTarget(achievement.condition)
   const tierColor = TIER_COLORS[achievement.tier] || '#9ca3af'
 
-  // completedTags: if available on the achievement object, use it;
-  // otherwise approximate by marking the first `current` tags as done
-  const completedTags = achievement.completedTags
-    ? achievement.completedTags
-    : tags.slice(0, current)
+  const completedTags = achievement.completedTags ?? []
 
   const displayedTags = showAll ? tags : tags.slice(0, 9)
 

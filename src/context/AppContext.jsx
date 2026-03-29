@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useCallback, useEffect, u
 import { categories as initialCategories } from '@/data/categories.js'
 import { achievements as initialAchievements } from '@/data/achievements.js'
 import { records as initialRecords } from '@/data/records.js'
-import { evaluateAchievements, evaluateMetaAchievements, computeProgress } from '@/utils/achievementEvaluator.js'
+import { evaluateAchievements, evaluateMetaAchievements, computeProgress, computeProgressFull } from '@/utils/achievementEvaluator.js'
 import { getDescendantIds } from '@/utils/categoryTree.js'
 import { generateId, todayStr } from '@/utils/formatters.js'
 import { useToast } from './ToastContext.jsx'
@@ -89,7 +89,12 @@ function appReducer(state, action) {
         ...state,
         achievements: state.achievements.map(a => {
           const update = action.updates.find(u => u.id === a.id)
-          return update ? { ...a, progress: update.progress } : a
+          if (!update) return a
+          return {
+            ...a,
+            progress: update.progress,
+            ...(update.completedTags !== undefined ? { completedTags: update.completedTags } : {}),
+          }
         }),
       }
 
@@ -309,7 +314,7 @@ export function AppProvider({ children }) {
       dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
     })
 
-    const metaUnlockedIds = evaluateMetaAchievements(nextAchievements)
+    const metaUnlockedIds = evaluateMetaAchievements(nextAchievements, nextRecords)
     nextAchievements = nextAchievements.map(a =>
       metaUnlockedIds.includes(a.id) ? { ...a, isEarned: true, earnedAt: todayStr() } : a
     )
@@ -317,10 +322,13 @@ export function AppProvider({ children }) {
       dispatch({ type: 'UNLOCK_ACHIEVEMENT', id, earnedAt: todayStr() })
     })
 
-    // Update partial progress for non-earned achievements in this category
+    // Update partial progress for non-earned achievements in this category and cross-category
     const progressUpdates = state.achievements
-      .filter(a => a.categoryId === newRecord.categoryId && !a.isEarned && a.type !== 'meta' && !unlockedIds.includes(a.id))
-      .map(a => ({ id: a.id, progress: computeProgress(a, nextRecords) }))
+      .filter(a => (a.categoryId === newRecord.categoryId || !a.categoryId) && !a.isEarned && a.type !== 'meta' && !unlockedIds.includes(a.id))
+      .map(a => {
+        const { progress, completedTags } = computeProgressFull(a, nextRecords)
+        return { id: a.id, progress, completedTags }
+      })
     if (progressUpdates.length > 0) {
       dispatch({ type: 'UPDATE_ACHIEVEMENTS_PROGRESS', updates: progressUpdates })
     }
