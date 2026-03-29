@@ -41,12 +41,12 @@ export default function ToastNotification({ toast }) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <span className="text-[10px] font-medium uppercase tracking-widest text-slate-500">
             업적 달성
           </span>
           <TrophyTierBadge tier={achievement.tier} size="xs" />
         </div>
-        <div className="font-bold text-sm text-slate-900 truncate mb-0.5">
+        <div className="font-medium text-sm text-slate-900 truncate mb-0.5">
           {achievement.title}
         </div>
         <div className="text-xs text-slate-500">

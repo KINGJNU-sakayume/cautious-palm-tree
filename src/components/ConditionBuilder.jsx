@@ -427,7 +427,7 @@ export default function ConditionBuilder({ type, value, onChange }) {
               <button
                 type="button"
                 onClick={toggleOperator}
-                className="px-3 py-1 text-xs font-bold rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+                className="px-3 py-1 text-xs font-medium rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
               >
                 {operator}
               </button>

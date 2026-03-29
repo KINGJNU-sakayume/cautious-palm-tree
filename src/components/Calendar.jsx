@@ -55,7 +55,7 @@ export default function Calendar({ records = [], selectedDate, onSelectDate }) {
         >
           ‹
         </button>
-        <span className="text-sm font-bold text-slate-800">
+        <span className="text-sm font-medium text-slate-800">
           {MONTH_NAMES[viewMonth]} {viewYear}
         </span>
         <button
@@ -69,7 +69,7 @@ export default function Calendar({ records = [], selectedDate, onSelectDate }) {
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[10px] font-semibold text-slate-400 uppercase py-1">
+          <div key={d} className="text-center text-[10px] font-medium text-slate-400 uppercase py-1">
             {d}
           </div>
         ))}
@@ -92,7 +92,7 @@ export default function Calendar({ records = [], selectedDate, onSelectDate }) {
                 'relative flex flex-col items-center rounded-lg py-1 text-xs font-medium transition-colors',
                 hasRecord ? 'cursor-pointer hover:bg-primary/10' : 'cursor-default',
                 isSelected ? 'bg-primary text-white' : '',
-                isToday && !isSelected ? 'font-extrabold text-primary' : '',
+                isToday && !isSelected ? 'font-medium text-primary' : '',
                 !isSelected && !isToday ? 'text-slate-600' : '',
               ]
                 .filter(Boolean)

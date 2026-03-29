@@ -191,10 +191,10 @@ export default function AchievementManagement() {
         {/* Table header + filters */}
         <div className="px-5 py-4 bg-white border-b border-slate-200 space-y-2.5">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-extrabold text-slate-900">업적</h1>
+            <h1 className="text-type-page font-medium text-slate-900">업적</h1>
             <button
               onClick={openNew}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
+              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
             >
               + 새 업적
             </button>
@@ -244,11 +244,11 @@ export default function AchievementManagement() {
           <table className="w-full text-sm table-fixed">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
               <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-32">티어</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">제목</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell w-48">카테고리</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hidden xl:table-cell">조건</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 w-16">상태</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 w-32">티어</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">제목</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 hidden xl:table-cell w-48">카테고리</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 hidden xl:table-cell">조건</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 w-16">상태</th>
                 <th className="w-16" />
               </tr>
             </thead>
@@ -336,7 +336,7 @@ export default function AchievementManagement() {
               >
                 ← 목록
               </button>
-              <h2 className="text-sm font-bold text-slate-900">
+              <h2 className="text-type-section font-medium text-slate-900">
                 {selectedId === '__new__' ? '새 업적' : '업적 편집'}
               </h2>
               <button
@@ -354,7 +354,7 @@ export default function AchievementManagement() {
                   <div className="flex items-center gap-2 mb-1.5">
                     <TrophyTierBadge tier={editForm.tier} size="sm" />
                   </div>
-                  <div className="font-bold text-sm text-slate-800 truncate">
+                  <div className="font-medium text-sm text-slate-800 truncate">
                     {editForm.title || <span className="text-slate-400 font-normal">업적 제목 미리보기</span>}
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
@@ -379,7 +379,7 @@ export default function AchievementManagement() {
             <div className="px-5 py-4 space-y-5 pb-8">
               {/* Title */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">제목</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">제목</label>
                 <input
                   type="text"
                   value={editForm.title}
@@ -391,7 +391,7 @@ export default function AchievementManagement() {
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">설명</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">설명</label>
                 <textarea
                   value={editForm.description}
                   onChange={e => setEditForm({ ...editForm, description: e.target.value })}
@@ -403,7 +403,7 @@ export default function AchievementManagement() {
 
               {/* Category */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">카테고리</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">카테고리</label>
                 <CategoryTreeSelector
                   value={editForm.categoryId}
                   onChange={id => setEditForm({ ...editForm, categoryId: id })}
@@ -413,7 +413,7 @@ export default function AchievementManagement() {
               {/* Tier + Type row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">티어</label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">티어</label>
                   <select
                     value={editForm.tier}
                     onChange={e => setEditForm({ ...editForm, tier: e.target.value })}
@@ -423,7 +423,7 @@ export default function AchievementManagement() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">유형</label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">유형</label>
                   <select
                     value={editForm.type}
                     onChange={e => setEditForm({ ...editForm, type: e.target.value, condition: { type: 'action' } })}
@@ -438,7 +438,7 @@ export default function AchievementManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center gap-1 mb-1.5">
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">획득률</label>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">획득률</label>
                     <span className="text-[10px] text-slate-400">전체 사용자 기준</span>
                     <div className="relative group/tooltip">
                       <span className="text-slate-400 cursor-help text-xs select-none">ⓘ</span>
@@ -461,7 +461,7 @@ export default function AchievementManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col justify-center">
-                  <label className="text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">숨김</label>
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">숨김</label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <div
                       onClick={() => setEditForm({ ...editForm, isHidden: !editForm.isHidden })}
@@ -484,7 +484,7 @@ export default function AchievementManagement() {
 
               {/* Condition builder */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">조건</label>
+                <label className="block text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide">조건</label>
                 <ConditionBuilder
                   type={editForm.type}
                   value={editForm.condition}
@@ -494,7 +494,7 @@ export default function AchievementManagement() {
 
               {/* Custom condition display text */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">조건 표시 문구</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1 uppercase tracking-wide">조건 표시 문구</label>
                 <input
                   type="text"
                   value={editForm.conditionDisplay || ''}
@@ -508,7 +508,7 @@ export default function AchievementManagement() {
               {/* Progress display format — only for enumerable condition types */}
               {isEnumerable && (
                 <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50">
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide">
                     진행 표시 형식
                   </label>
 
@@ -528,7 +528,7 @@ export default function AchievementManagement() {
 
                   {/* 카드 요약 */}
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">카드 요약</label>
+                    <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">카드 요약</label>
                     <input
                       ref={cardSummaryRef}
                       type="text"
@@ -543,7 +543,7 @@ export default function AchievementManagement() {
                   {/* 확장 제목 — tag_set only */}
                   {isTagSet && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">확장 제목</label>
+                      <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">확장 제목</label>
                       <input
                         ref={expandTitleRef}
                         type="text"
@@ -560,7 +560,7 @@ export default function AchievementManagement() {
                   {isTagSet && (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">완료 항목 스타일</label>
+                        <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">완료 항목 스타일</label>
                         <select
                           value={editForm.completedStyle}
                           onChange={e => setEditForm({ ...editForm, completedStyle: e.target.value })}
@@ -572,7 +572,7 @@ export default function AchievementManagement() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">미완료 항목 스타일</label>
+                        <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">미완료 항목 스타일</label>
                         <select
                           value={editForm.incompleteStyle}
                           onChange={e => setEditForm({ ...editForm, incompleteStyle: e.target.value })}
@@ -589,7 +589,7 @@ export default function AchievementManagement() {
                   {/* Live preview pill */}
                   <div className="text-xs text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-lg">
                     <span className="text-slate-400">미리보기: </span>
-                    <span className="font-semibold">
+                    <span className="font-medium">
                       {renderTemplate(editForm.progressFormat || '{current}/{total}', previewValues)}
                     </span>
                   </div>
@@ -600,14 +600,14 @@ export default function AchievementManagement() {
               <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
+                  className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
                 >
                   저장
                 </button>
                 {selectedId !== '__new__' && (
                   <button
                     onClick={handleDelete}
-                    className="px-4 py-2.5 text-red-600 border border-red-200 rounded-lg text-sm font-semibold hover:bg-red-50 transition-colors"
+                    className="px-4 py-2.5 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                   >
                     삭제
                   </button>

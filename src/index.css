@@ -1,3 +1,19 @@
+:root {
+  /* Type scale */
+  --type-page: 20px;
+  --type-section: 18px;
+  --type-card: 15px;
+  --type-body: 14px;
+  --type-secondary: 12px;
+  --type-badge: 11px;
+
+  /* Semantic color tokens */
+  --color-text-secondary: #94a3b8;
+  --color-text-success: #16a34a;
+  --color-background-primary: #ffffff;
+  --color-border: #e2e8f0;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

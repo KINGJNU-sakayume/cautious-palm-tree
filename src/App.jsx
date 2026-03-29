@@ -22,7 +22,7 @@ function NavBar() {
       {/* Logo */}
       <div className="flex items-center gap-1.5 mr-3 sm:mr-6">
         <TrophyIcon size={16} className="text-amber-500" />
-        <span className="font-extrabold text-slate-900 text-sm hidden sm:inline">업적 라이브러리</span>
+        <span className="font-medium text-slate-900 text-sm hidden sm:inline">업적 라이브러리</span>
       </div>
 
       {/* Nav links */}
@@ -38,7 +38,7 @@ function NavBar() {
                 [
                   'flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
+                    ? 'bg-primary/10 text-primary font-medium'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                 ].join(' ')
               }

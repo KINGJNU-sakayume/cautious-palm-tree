@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
-import Sidebar from '@/components/Sidebar.jsx'
+import Sidebar, { MobileNav } from '@/components/Sidebar.jsx'
 import SummaryStatCard from '@/components/SummaryStatCard.jsx'
 import RecordEditor from '@/components/RecordEditor.jsx'
 import RecordCard from '@/components/RecordCard.jsx'
@@ -8,7 +8,7 @@ import AchievementCard from '@/components/AchievementCard.jsx'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import ProgressBar from '@/components/ProgressBar.jsx'
 import {
-  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon, MenuIcon, XIcon,
+  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon,
 } from '@/components/Icons.jsx'
 import { getCategoryPath, getDirectChildren, getDescendantIds } from '@/utils/categoryTree.js'
 import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
@@ -45,7 +45,7 @@ function ChildCategoryGroup({ category, achievements, records }) {
       >
         <div className="flex items-center gap-2">
           <span className={`text-slate-400 transition-transform ${expanded ? '' : '-rotate-90'}`}>▾</span>
-          <span className="font-semibold text-sm text-slate-700">{category.name}</span>
+          <span className="font-medium text-type-card text-slate-700">{category.name}</span>
         </div>
         <span className="text-xs text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full font-medium">
           {earned} / {total} 획득
@@ -68,7 +68,6 @@ export default function Dashboard() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     categories.find(c => c.parentId === null)?.id || null
   )
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null)
   const [quickLogOpen, setQuickLogOpen] = useState(false)
 
@@ -122,49 +121,34 @@ export default function Dashboard() {
   }, [selectedCategoryId])
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-20 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={[
-          'flex-shrink-0 h-full overflow-hidden z-30 transition-transform duration-300',
-          'fixed md:static top-0 left-0 bottom-0',
-          'w-56',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-        ].join(' ')}
-      >
-        <Sidebar
+    <div className="flex flex-col h-full min-h-0">
+      {/* Mobile chip bar + bottom sheet — only visible below md */}
+      <div className="md:hidden">
+        <MobileNav
           selectedCategoryId={selectedCategoryId}
-          onSelectCategory={(id) => { setSelectedCategoryId(id); setSidebarOpen(false) }}
+          onSelectCategory={setSelectedCategoryId}
         />
       </div>
+
+      <div className="flex flex-1 min-h-0">
+        {/* Desktop sidebar — hidden on mobile */}
+        <div className="hidden md:block flex-shrink-0 h-full overflow-hidden w-[240px]">
+          <Sidebar
+            selectedCategoryId={selectedCategoryId}
+            onSelectCategory={setSelectedCategoryId}
+          />
+        </div>
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto bg-neutral-50 scrollbar-thin">
         <div className="px-6 py-6 space-y-6">
-          {/* Mobile sidebar toggle */}
-          <button
-            className="md:hidden flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 -mt-2 -ml-1 mb-0 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors self-start"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <MenuIcon size={18} />
-            <span>카테고리</span>
-          </button>
-
           {/* Header */}
           {selectedCategory ? (
             <>
               <div className="flex items-start justify-between gap-4">
                 {/* Breadcrumb + title */}
                 <div>
-                  <nav className="flex items-center gap-1 text-xs text-slate-400 mb-1 flex-wrap">
+                  <nav className="flex items-center gap-1 text-type-secondary text-slate-400 mb-1 flex-wrap">
                     {breadcrumbPath.map((segment, i) => (
                       <React.Fragment key={segment.id}>
                         {i > 0 && <span className="select-none">›</span>}
@@ -182,13 +166,13 @@ export default function Dashboard() {
                       </React.Fragment>
                     ))}
                   </nav>
-                  <h1 className="text-2xl font-extrabold text-slate-900">{selectedCategory.name}</h1>
+                  <h1 className="text-type-page font-medium text-slate-900">{selectedCategory.name}</h1>
                 </div>
 
                 {/* Quick Log button */}
                 <button
                   onClick={() => setQuickLogOpen(true)}
-                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark active:scale-95 transition-all shadow-sm mt-1"
+                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark active:scale-95 transition-all shadow-sm mt-1"
                 >
                   <span className="text-base leading-none">+</span>
                   <span>기록추가</span>
@@ -226,7 +210,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
                 {/* Left column — Recent records */}
                 <section>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                  <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
                     최근 기록
                   </h2>
                   {recentRecords.length > 0 ? (
@@ -246,7 +230,7 @@ export default function Dashboard() {
                 <div className="space-y-6">
                   {earnedAchievements.length > 0 && (
                     <section>
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
                         획득 ({earnedAchievements.length})
                       </h2>
                       <div className="grid grid-cols-1 gap-3">
@@ -259,7 +243,7 @@ export default function Dashboard() {
 
                   {inProgressAchievements.length > 0 && (
                     <section>
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
                         진행 중 / 잠김 ({inProgressAchievements.length})
                       </h2>
                       <div className="grid grid-cols-1 gap-3">
@@ -281,7 +265,7 @@ export default function Dashboard() {
               {/* Child category groups — full width below grid */}
               {directChildren.length > 0 && (
                 <section>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">
+                  <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
                     하위 카테고리
                   </h2>
                   <div className="space-y-3">
@@ -299,7 +283,7 @@ export default function Dashboard() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <p className="text-lg font-semibold">시작할 카테고리를 선택하세요</p>
+              <p className="text-lg font-medium">시작할 카테고리를 선택하세요</p>
               <p className="text-sm mt-1">또는 사이드바에서 새로 만드세요</p>
             </div>
           )}
@@ -337,6 +321,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      </div>{/* end flex flex-1 min-h-0 */}
     </div>
   )
 }
