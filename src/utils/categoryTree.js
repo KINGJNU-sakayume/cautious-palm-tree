@@ -1,6 +1,17 @@
 /**
+ * @typedef {Object} Category
+ * @property {string} id
+ * @property {string} name
+ * @property {string|null} parentId
+ *
+ * @typedef {Category & { children: TreeNode[] }} TreeNode
+ */
+
+/**
  * Build a nested tree from a flat category array.
  * Returns an array of root nodes, each with a `children` array.
+ * @param {Category[]} flatCategories
+ * @returns {TreeNode[]}
  */
 export function buildTree(flatCategories) {
   const map = new Map()
@@ -26,6 +37,9 @@ export function buildTree(flatCategories) {
 /**
  * Returns an array of category objects from root to the given node (inclusive).
  * e.g. [Fitness, Strength, Bench Press]
+ * @param {string} categoryId
+ * @param {Category[]} flatCategories
+ * @returns {Category[]}
  */
 export function getCategoryPath(categoryId, flatCategories) {
   const map = new Map(flatCategories.map(c => [c.id, c]))
@@ -40,6 +54,9 @@ export function getCategoryPath(categoryId, flatCategories) {
 
 /**
  * Returns all descendant IDs (not including the node itself) via BFS.
+ * @param {string} categoryId
+ * @param {Category[]} flatCategories
+ * @returns {string[]}
  */
 export function getDescendantIds(categoryId, flatCategories) {
   const childrenMap = new Map()
@@ -65,6 +82,9 @@ export function getDescendantIds(categoryId, flatCategories) {
 
 /**
  * Find a category by ID.
+ * @param {string} categoryId
+ * @param {Category[]} flatCategories
+ * @returns {Category|null}
  */
 export function getCategoryById(categoryId, flatCategories) {
   return flatCategories.find(c => c.id === categoryId) || null
@@ -72,6 +92,9 @@ export function getCategoryById(categoryId, flatCategories) {
 
 /**
  * Returns all category IDs that are direct children of the given parentId.
+ * @param {string} parentId
+ * @param {Category[]} flatCategories
+ * @returns {Category[]}
  */
 export function getDirectChildren(parentId, flatCategories) {
   return flatCategories.filter(c => c.parentId === parentId)
@@ -79,6 +102,9 @@ export function getDirectChildren(parentId, flatCategories) {
 
 /**
  * Returns true if the category is a leaf (no children).
+ * @param {string} categoryId
+ * @param {Category[]} flatCategories
+ * @returns {boolean}
  */
 export function isLeafCategory(categoryId, flatCategories) {
   return !flatCategories.some(c => c.parentId === categoryId)

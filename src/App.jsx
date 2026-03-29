@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
-import Dashboard from './pages/Dashboard.jsx'
-import RecordHub from './pages/RecordHub.jsx'
-import AchievementManagement from './pages/AchievementManagement.jsx'
-import AchievementShowcase from './pages/AchievementShowcase.jsx'
+
+const Dashboard             = lazy(() => import('./pages/Dashboard.jsx'))
+const RecordHub             = lazy(() => import('./pages/RecordHub.jsx'))
+const AchievementManagement = lazy(() => import('./pages/AchievementManagement.jsx'))
+const AchievementShowcase   = lazy(() => import('./pages/AchievementShowcase.jsx'))
 import ToastStack from './components/ToastStack.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { LayoutIcon, ClipboardIcon, SettingsIcon, TrophyIcon } from './components/Icons.jsx'
@@ -70,12 +71,18 @@ export default function App() {
             데이터 불러오는 중...
           </div>
         ) : (
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/records" element={<RecordHub />} />
-            <Route path="/achievements" element={<AchievementManagement />} />
-            <Route path="/showcase" element={<AchievementShowcase />} />
-          </Routes>
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+              페이지 불러오는 중...
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/records" element={<RecordHub />} />
+              <Route path="/achievements" element={<AchievementManagement />} />
+              <Route path="/showcase" element={<AchievementShowcase />} />
+            </Routes>
+          </Suspense>
         )}
       </main>
       <ToastStack />

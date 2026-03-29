@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useState } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useState, useRef } from 'react'
 import { categories as initialCategories } from '@/data/categories.js'
 import { achievements as initialAchievements } from '@/data/achievements.js'
 import { records as initialRecords } from '@/data/records.js'
@@ -224,19 +224,24 @@ export function AppProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
+  // ── Keep a ref to the latest state for use in effects that only run once ──
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state })
+
   // ── Post-bootstrap: recompute completedTags/completedDates for tag_set achievements ──
   useEffect(() => {
     if (loading) return
-    const tagSetAchievements = state.achievements.filter(
+    const { achievements, records } = stateRef.current
+    const tagSetAchievements = achievements.filter(
       a => a.condition?.type === 'tag_set_complete' && !a._softDeleted
     )
     if (tagSetAchievements.length === 0) return
     const updates = tagSetAchievements.map(a => {
-      const { progress, completedTags, completedDates } = computeProgressFull(a, state.records)
+      const { progress, completedTags, completedDates } = computeProgressFull(a, records)
       return { id: a.id, progress, completedTags, completedDates }
     })
     dispatch({ type: 'UPDATE_ACHIEVEMENTS_PROGRESS', updates })
-  }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading])
 
   // ── Category actions ────────────────────────────────────────────────
   const addCategory = useCallback(async (categoryData) => {

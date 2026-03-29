@@ -5,27 +5,65 @@
  * evaluateMetaAchievements — called after each regular achievement is unlocked
  */
 
-// ── UTC date helpers ──────────────────────────────────────────────────────────
+/**
+ * @typedef {'AND'|'OR'} LogicalOperator
+ *
+ * @typedef {Object} ConditionSource
+ * @property {string} categoryId
+ * @property {'sum'|'max'|'last'} aggregation
+ *
+ * @typedef {Object} Condition
+ * @property {string} type
+ * @property {number} [target]
+ * @property {string} [tag]
+ * @property {string[]} [tags]
+ * @property {string[]} [achievementIds]
+ * @property {string} [categoryId]
+ * @property {LogicalOperator} [operator]
+ * @property {Condition[]} [conditions]
+ * @property {ConditionSource[]} [sources]
+ *
+ * @typedef {Object} AchievementRecord
+ * @property {string} id
+ * @property {string} categoryId
+ * @property {string} date          YYYY-MM-DD
+ * @property {number|null} value
+ * @property {string[]} tags
+ * @property {string[]} unlockedAchievementIds
+ *
+ * @typedef {Object} Achievement
+ * @property {string} id
+ * @property {string|null} categoryId
+ * @property {string} type          'one-time' | 'repeatable' | 'meta'
+ * @property {boolean} isEarned
+ * @property {string|null} earnedAt
+ * @property {Condition} condition
+ * @property {boolean} [_softDeleted]
+ *
+ * @typedef {Object} ProgressResult
+ * @property {number} progress
+ * @property {string[]|null} completedTags
+ * @property {Object|undefined} completedDates
+ */
 
-function todayUTCStr() {
+// ── Local date helpers ────────────────────────────────────────────────────────
+// Uses local timezone to match date strings stored by todayStr() in formatters.js
+
+function todayLocalStr() {
   const now = new Date()
-  const y = now.getUTCFullYear()
-  const m = String(now.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(now.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
+// Uses local timezone for consistent day-boundary calculation
 function prevDateStr(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00Z')
-  d.setUTCDate(d.getUTCDate() - 1)
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() - 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 function calcStreak(dateset) {
-  const today = todayUTCStr()
+  const today = todayLocalStr()
   const yesterday = prevDateStr(today)
   const startDate = dateset.has(today)
     ? today
@@ -47,6 +85,10 @@ function calcStreak(dateset) {
  * Evaluate a single condition against the record set.
  * `records` should include the newRecord already appended.
  * `newRecord` is passed separately so 'single' checks use it directly.
+ * @param {Condition} condition
+ * @param {AchievementRecord[]} records
+ * @param {AchievementRecord} newRecord
+ * @returns {boolean}
  */
 export function evaluateCondition(condition, records, newRecord) {
   const categoryRecords = records.filter(r => r.categoryId === newRecord.categoryId)
@@ -125,10 +167,10 @@ export function evaluateCondition(condition, records, newRecord) {
  * plus any cross-category (no categoryId) achievements.
  * Returns array of achievement IDs that are now fulfilled.
  *
- * @param {Object} newRecord - the just-saved record
- * @param {Array} allRecords - all records INCLUDING newRecord
- * @param {Array} allAchievements - current achievements state
- * @returns {string[]} - IDs of newly unlocked achievements
+ * @param {AchievementRecord} newRecord - the just-saved record
+ * @param {AchievementRecord[]} allRecords - all records INCLUDING newRecord
+ * @param {Achievement[]} allAchievements - current achievements state
+ * @returns {string[]} IDs of newly unlocked achievements
  */
 export function evaluateAchievements(newRecord, allRecords, allAchievements) {
   // Group 1: achievements tied to this specific category
@@ -157,9 +199,9 @@ export function evaluateAchievements(newRecord, allRecords, allAchievements) {
  * After a regular achievement is unlocked, check if any meta achievements are now fulfilled.
  * `allAchievements` should already reflect the newly unlocked state (isEarned = true for the just-unlocked ones).
  *
- * @param {Array} allAchievements - current achievements state (with newly unlocked already set)
- * @param {Array} allRecords - all records (needed for cross_category_cumulative)
- * @returns {string[]} - IDs of meta achievements newly unlocked
+ * @param {Achievement[]} allAchievements - current achievements state (with newly unlocked already set)
+ * @param {AchievementRecord[]} allRecords - all records (needed for cross_category_cumulative)
+ * @returns {string[]} IDs of meta achievements newly unlocked
  */
 export function evaluateMetaAchievements(allAchievements, allRecords = []) {
   const metaCandidates = allAchievements.filter(a => a.type === 'meta' && !a.isEarned)
@@ -220,7 +262,9 @@ export function evaluateMetaAchievements(allAchievements, allRecords = []) {
 
 /**
  * Compute current progress for a non-earned achievement.
- * Returns { progress: number, completedTags: string[] | null }
+ * @param {Achievement} achievement
+ * @param {AchievementRecord[]} allRecords
+ * @returns {ProgressResult}
  */
 export function computeProgressFull(achievement, allRecords) {
   const { condition, categoryId } = achievement
@@ -320,6 +364,9 @@ export function computeProgressFull(achievement, allRecords) {
 /**
  * Compute current progress value for a non-earned achievement.
  * Thin wrapper around computeProgressFull for backward compatibility.
+ * @param {Achievement} achievement
+ * @param {AchievementRecord[]} allRecords
+ * @returns {number}
  */
 export function computeProgress(achievement, allRecords) {
   return computeProgressFull(achievement, allRecords).progress

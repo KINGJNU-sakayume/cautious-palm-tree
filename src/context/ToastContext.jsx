@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef } from 'react'
 import { generateId } from '@/utils/formatters.js'
+import { TOAST_DURATION_MS, TOAST_DISMISS_ANIM_MS, TOAST_STAGGER_MS } from '@/constants/timing.js'
 
 const ToastContext = createContext(null)
 
@@ -35,26 +36,26 @@ export function ToastProvider({ children }) {
       timers.current.delete(id)
     }
     dispatch({ type: 'START_DISMISS', id })
-    setTimeout(() => dispatch({ type: 'REMOVE_TOAST', id }), 300)
+    setTimeout(() => dispatch({ type: 'REMOVE_TOAST', id }), TOAST_DISMISS_ANIM_MS)
   }, [])
 
   const addToast = useCallback((achievement) => {
     const id = generateId('toast')
     dispatch({ type: 'ADD_TOAST', id, achievement })
-    const timer = setTimeout(() => dismissToast(id), 4500)
+    const timer = setTimeout(() => dismissToast(id), TOAST_DURATION_MS)
     timers.current.set(id, timer)
   }, [dismissToast])
 
   const addToasts = useCallback((achievements) => {
     achievements.forEach((achievement, i) => {
-      setTimeout(() => addToast(achievement), i * 300)
+      setTimeout(() => addToast(achievement), i * TOAST_STAGGER_MS)
     })
   }, [addToast])
 
   const showError = useCallback((message) => {
     const id = crypto.randomUUID()
     dispatch({ type: 'ADD_ERROR_TOAST', toast: { id, tier: 'error', title: '오류', body: message } })
-    timers.current.set(id, setTimeout(() => dismissToast(id), 4500))
+    timers.current.set(id, setTimeout(() => dismissToast(id), TOAST_DURATION_MS))
   }, [dismissToast])
 
   return (

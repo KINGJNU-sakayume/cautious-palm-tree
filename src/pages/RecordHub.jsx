@@ -7,6 +7,7 @@ import UnlockLogCard from '@/components/UnlockLogCard.jsx'
 import FilterBar from '@/components/FilterBar.jsx'
 import { formatDate, todayStr, dateToMonth } from '@/utils/formatters.js'
 import { getCategoryPath } from '@/utils/categoryTree.js'
+import { JUMP_HIGHLIGHT_MS } from '@/constants/timing.js'
 
 const BATCH_SIZE = 30
 
@@ -186,7 +187,7 @@ export default function RecordHub() {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-    jumpTimerRef.current = setTimeout(() => setJumpedDate(null), 2000)
+    jumpTimerRef.current = setTimeout(() => setJumpedDate(null), JUMP_HIGHLIGHT_MS)
   }, [])
 
   useEffect(() => () => { if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current) }, [])

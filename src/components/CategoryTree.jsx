@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { buildTree, getDescendantIds, getCategoryPath } from '@/utils/categoryTree.js'
 import { useApp } from '@/context/AppContext.jsx'
 import { useCategoryDefaults } from '@/hooks/useCategoryDefaults.js'
+import { useConfirm } from '@/hooks/useConfirm.jsx'
 import {
   PencilIcon, PlusIcon, FolderIcon, TrashIcon, DotsIcon,
   StarIcon, StarFilledIcon, SettingsIcon, XIcon, CheckIcon,
@@ -538,6 +539,7 @@ function TreeNode({
 export default function CategoryTree({ selectedId, onSelect, searchQuery = '', favorites = [], onToggleFavorite }) {
   const { categories, addCategory, renameCategory, deleteCategory, reparentCategory } = useApp()
   const [renamingId, setRenamingId] = useState(null)
+  const { confirmDialog, confirm } = useConfirm()
 
   const filtered = searchQuery
     ? categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -560,11 +562,14 @@ export default function CategoryTree({ selectedId, onSelect, searchQuery = '', f
     if (name.trim()) renameCategory(id, name.trim())
   }, [renameCategory])
 
-  const handleDelete = useCallback((id) => {
-    if (window.confirm('Delete this category and all its subcategories? Records will be preserved.')) {
-      deleteCategory(id)
-    }
-  }, [deleteCategory])
+  const handleDelete = useCallback(async (id) => {
+    const confirmed = await confirm(
+      '카테고리 삭제',
+      '이 카테고리와 모든 하위 항목을 삭제할까요?\n기록은 보존됩니다.'
+    )
+    if (!confirmed) return
+    deleteCategory(id)
+  }, [deleteCategory, confirm])
 
   const handleReparent = useCallback((id, newParentId) => {
     reparentCategory(id, newParentId)
@@ -594,6 +599,7 @@ export default function CategoryTree({ selectedId, onSelect, searchQuery = '', f
       {tree.length === 0 && (
         <div className="text-xs text-slate-400 px-3 py-2">No categories found</div>
       )}
+      {confirmDialog}
     </div>
   )
 }
