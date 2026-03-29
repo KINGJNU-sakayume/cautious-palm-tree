@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '@/context/AppContext.jsx'
-import { useUserSettings } from '@/hooks/useUserSettings.js'
 import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
 import CategoryTreeSelector from '@/components/CategoryTreeSelector.jsx'
 import ConditionBuilder from '@/components/ConditionBuilder.jsx'
@@ -37,6 +36,7 @@ function blankAchievement() {
     expandTitle: '',
     completedStyle: 'bold',
     incompleteStyle: 'muted',
+    conditionDisplay: '',
   }
 }
 
@@ -60,7 +60,6 @@ function LockIcon({ className = '' }) {
 
 export default function AchievementManagement() {
   const { categories, achievements, addAchievement, updateAchievement, deleteAchievement } = useApp()
-  const { settings, updateSettings } = useUserSettings()
   const [selectedId, setSelectedId] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
@@ -93,6 +92,7 @@ export default function AchievementManagement() {
       expandTitle: '',
       completedStyle: 'bold',
       incompleteStyle: 'muted',
+      conditionDisplay: '',
       ...achievement,
     })
     setSlideOverOpen(true)
@@ -207,7 +207,7 @@ export default function AchievementManagement() {
             className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
           />
 
-          {/* Tier + Status dropdowns + reset + condition toggle */}
+          {/* Tier + Status dropdowns + reset */}
           <div className="flex items-center gap-2">
             <select
               value={filterTier}
@@ -226,16 +226,6 @@ export default function AchievementManagement() {
               <option value="earned">획득</option>
               <option value="locked">잠김</option>
             </select>
-            <button
-              onClick={() => updateSettings({ showConditions: !settings.showConditions })}
-              className={`px-2 py-1.5 border rounded-lg text-sm transition-colors ${
-                settings.showConditions
-                  ? 'border-primary text-primary bg-primary/5 hover:bg-primary/10'
-                  : 'border-slate-300 text-slate-500 bg-white hover:bg-slate-50'
-              }`}
-            >
-              {settings.showConditions ? '조건 숨기기' : '조건 표시'}
-            </button>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
@@ -498,6 +488,19 @@ export default function AchievementManagement() {
                   value={editForm.condition}
                   onChange={cond => setEditForm({ ...editForm, condition: cond })}
                 />
+              </div>
+
+              {/* Custom condition display text */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">조건 표시 문구</label>
+                <input
+                  type="text"
+                  value={editForm.conditionDisplay || ''}
+                  onChange={e => setEditForm(f => ({ ...f, conditionDisplay: e.target.value }))}
+                  placeholder={editForm.condition ? conditionSummaryText(editForm.condition) : '자동 생성됨'}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">비워두면 조건에 따라 자동 생성됩니다</p>
               </div>
 
               {/* Progress display format — only for enumerable condition types */}
