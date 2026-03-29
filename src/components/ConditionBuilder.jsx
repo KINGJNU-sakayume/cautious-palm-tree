@@ -6,11 +6,13 @@ const CONDITION_TYPES = [
   { value: 'action', label: '행동 (기록 1회)' },
   { value: 'count', label: '횟수' },
   { value: 'cumulative', label: '누적' },
+  { value: 'daily_cumulative', label: '일별 누적' },
   { value: 'single', label: '단일 값' },
   { value: 'streak', label: '연속' },
   { value: 'tag_match', label: '태그 일치' },
   { value: 'tag_count', label: '태그 횟수' },
   { value: 'tag_set_complete', label: '태그 세트 완성' },
+  { value: 'cross_category_cumulative', label: '교차 카테고리 누적' },
 ]
 
 const META_TYPES = [
@@ -18,6 +20,83 @@ const META_TYPES = [
   { value: 'meta_list', label: '특정 업적 목록' },
   { value: 'meta_clear', label: '카테고리 전체 달성' },
 ]
+
+const AGGREGATION_OPTIONS = [
+  { value: 'max', label: '최댓값 (개인 최고)' },
+  { value: 'last', label: '최근값' },
+  { value: 'sum', label: '합계' },
+]
+
+function CrossCategorySources({ condition, update }) {
+  const sources = condition.sources || []
+
+  const updateSource = (i, field, val) => {
+    const next = sources.map((s, idx) => idx === i ? { ...s, [field]: val } : s)
+    update('sources', next)
+  }
+
+  const addSource = () => {
+    update('sources', [...sources, { categoryId: null, aggregation: 'max' }])
+  }
+
+  const removeSource = (i) => {
+    update('sources', sources.filter((_, idx) => idx !== i))
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-slate-400">업적의 카테고리 필드는 비워두세요 — 이 조건은 여러 카테고리를 집계합니다.</p>
+
+      {sources.map((src, i) => (
+        <div key={i} className="flex items-start gap-2 bg-white border border-slate-200 rounded-lg p-2">
+          <div className="flex-1 space-y-1.5">
+            <CategoryTreeSelector
+              value={src.categoryId || null}
+              onChange={id => updateSource(i, 'categoryId', id)}
+            />
+            <select
+              value={src.aggregation || 'max'}
+              onChange={e => updateSource(i, 'aggregation', e.target.value)}
+              className="w-full px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary"
+            >
+              {AGGREGATION_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeSource(i)}
+            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 rounded transition-colors flex-shrink-0 mt-0.5"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={addSource}
+        className="w-full px-2 py-1.5 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors"
+      >
+        + 소스 카테고리 추가
+      </button>
+
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-slate-500 w-16 flex-shrink-0">합계 목표</label>
+        <input
+          type="number"
+          min={0}
+          step="any"
+          value={condition.target || ''}
+          onChange={e => update('target', Number(e.target.value))}
+          placeholder="500"
+          className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+        />
+      </div>
+    </div>
+  )
+}
 
 function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
   const update = (field, val) => onChange({ ...condition, [field]: val })
@@ -64,25 +143,30 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
         </div>
       )}
 
-      {(condition.type === 'cumulative' || condition.type === 'single') && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
-          <input
-            type="number"
-            min={0}
-            step="any"
-            value={condition.target || ''}
-            onChange={e => update('target', Number(e.target.value))}
-            placeholder="100"
-            className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-          <input
-            type="text"
-            value={condition.unit || ''}
-            onChange={e => update('unit', e.target.value)}
-            placeholder="km, kg…"
-            className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
+      {(condition.type === 'cumulative' || condition.type === 'single' || condition.type === 'daily_cumulative') && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
+            <input
+              type="number"
+              min={0}
+              step="any"
+              value={condition.target || ''}
+              onChange={e => update('target', Number(e.target.value))}
+              placeholder="100"
+              className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+            />
+            <input
+              type="text"
+              value={condition.unit || ''}
+              onChange={e => update('unit', e.target.value)}
+              placeholder="km, kg…"
+              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
+            />
+          </div>
+          {condition.type === 'daily_cumulative' && (
+            <p className="text-xs text-slate-400">하루 내 여러 기록의 값을 합산하여 목표에 도달하면 획득</p>
+          )}
         </div>
       )}
 
@@ -156,6 +240,10 @@ function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
             {(condition.tags || []).length}개 태그 — 모두 달성해야 획득
           </p>
         </div>
+      )}
+
+      {condition.type === 'cross_category_cumulative' && (
+        <CrossCategorySources condition={condition} update={update} />
       )}
     </div>
   )

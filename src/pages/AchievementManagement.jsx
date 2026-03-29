@@ -13,7 +13,10 @@ const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary']
 const TYPES = ['one-time', 'repeatable', 'meta']
 
 // Condition types that support enumerable progress templates
-const ENUMERABLE_TYPES = ['tag_set_complete', 'meta_list', 'count', 'cumulative', 'tag_count']
+const ENUMERABLE_TYPES = [
+  'tag_set_complete', 'meta_list', 'count', 'cumulative',
+  'tag_count', 'daily_cumulative', 'cross_category_cumulative',
+]
 
 function blankAchievement() {
   return {
