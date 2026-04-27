@@ -1,23 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Achievement Library</title>
-    <meta name="theme-color" content="#0066FF" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="업적 라이브러리" />
-    <link rel="apple-touch-icon" href="/cautious-palm-tree/icons/icon-192.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
+    <title>업적 라이브러리</title>
+    <style>
+      html, body {
+        margin: 0; padding: 0; height: 100%;
+        background: #0f172a; color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+      }
+      .splash {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 100vh; gap: 12px;
+      }
+      .splash-icon { font-size: 48px; }
+      .splash-text { font-size: 14px; opacity: 0.7; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div class="splash" role="status" aria-live="polite">
+      <div class="splash-icon">🏆</div>
+      <div class="splash-text">불러오는 중…</div>
+    </div>
+
+    <!--
+      Device detection router.
+      Implements the exact UA + viewport-width matrix from the project spec
+      so that ONLY a true mobile UA loads the mobile bundle. A desktop browser
+      with a narrowed window MUST stay on the desktop bundle.
+    -->
+    <script>
+      (function () {
+        var BASE = '/cautious-palm-tree/';
+
+        // Step 1 — UA mobile keyword test.
+        var uaMobile = /Android|iPhone|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // Step 2 — viewport width test (≤ 430px ≈ iPhone 15 Pro Max width in CSS px).
+        // Computed but used only for documentation / future logic. Routing decision
+        // is driven by UA alone, per the spec matrix:
+        //   uaMobile  | widthSmall | target
+        //     TRUE    |   TRUE     | MOBILE
+        //     TRUE    |   FALSE    | MOBILE
+        //     FALSE   |   TRUE     | DESKTOP   ← intentional: resized desktop window
+        //     FALSE   |   FALSE    | DESKTOP
+        // eslint-disable-next-line no-unused-vars
+        var widthSmall = window.innerWidth <= 430;
+
+        var loadMobile = uaMobile;
+        var target = loadMobile ? BASE + 'mobile/' : BASE + 'desktop/';
+
+        // Use replace() so the splash page is not added to history.
+        window.location.replace(target);
+      })();
+    </script>
   </body>
 </html>
