@@ -2,6 +2,8 @@
 
 꾸준히 하고 싶은 일을 기록하면, 조건을 채운 업적이 저절로 쌓이는 개인 기록장입니다.
 달리기·독서·저축처럼 카테고리별로 기록을 남기고, 진열장에서 모은 업적을 둘러볼 수 있습니다.
+기본으로 카테고리 71개(피트니스·건강·영양·학습·마음 챙김·여행·문화생활·창작·커리어·재정·기술·사회활동·관계·생활)와
+업적 786개가 들어 있고, 업적은 얼마든지 직접 만들거나 고칠 수 있습니다.
 
 - **홈** — 카테고리별 기록, 연속 기록, 다음 목표
 - **기록** — 날짜별 기록과 업적 달성 기록, 달력, 검색
@@ -17,8 +19,9 @@ Node.js 18 이상이 필요합니다.
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173/cautious-palm-tree/)
-npm test         # 업적 엔진·저장 형식 테스트 (Vitest)
+npm test         # 업적 엔진·저장 형식·기본 업적 목록 테스트 (Vitest)
 npm run build    # 배포용 빌드 → dist/
+npm run catalog:snapshot  # 기본 업적 목록을 바꿀 때 (docs/achievement-system.md 8장)
 ```
 
 `main` 브랜치에 푸시하면 GitHub Actions가 테스트와 빌드를 거쳐 GitHub Pages에 배포합니다
@@ -41,12 +44,19 @@ npm run build    # 배포용 빌드 → dist/
 그래서 지난 날짜로 기록을 남기거나, 기록을 고치거나 지워도, 업적을 나중에 만들어도 결과가 항상 맞습니다.
 
 - 업적의 카테고리에는 **하위 카테고리 기록까지** 포함됩니다. 카테고리가 없는 업적은 모든 기록을 셉니다.
-- 조건 종류: 첫 기록, 횟수, 누적 합계, 한 번에 넘기기, 하루 합계, 연속 기록, 태그, 태그 모으기,
-  여러 카테고리 합산(예: 3대 중량), 조건 묶기, 다른 업적 기반(메타), 직접 체크.
-- 단위가 다른 기록은 환산할 수 있으면 자동으로 바꿔 더합니다(m→km, ml→L, 분→시간, 만원→원).
+- 조건 종류: 첫 기록, 횟수, 기록한 날 수, 연속 기록, 매주·매달 꾸준히, 누적 합계, 한 번에 넘기기, 하루 합계,
+  한 주·한 달·한 해 합계, 태그, 태그 모으기, 여러 카테고리에 기록, 여러 카테고리 합산(예: 3대 중량), 조건 묶기,
+  다른 업적 기반(메타, 등급별로 세기 가능), 직접 체크. 횟수·날 수·연속 기록에는 "하루 2L 이상"처럼 기준 값을 붙일 수 있습니다.
+- 단위가 다른 기록은 환산할 수 있으면 자동으로 바꿔 더합니다(m→km, ml→L, 분→시간, 만원→원, 쪽→페이지, 보→걸음 …).
+  기본 업적은 카테고리마다 단위를 하나만 써서, 단위 없이 적은 숫자도 헷갈리지 않습니다.
 - 등급은 브론즈 · 실버 · 골드 · 플래티넘 · 다이아몬드 다섯 단계입니다.
 
-규칙 전체와 기본 업적 목록의 변경 내역은 [docs/achievement-system.md](docs/achievement-system.md)에 정리되어 있습니다.
+**기록하기** 화면은 카테고리 업적이 쓰는 단위를 미리 채우고(`5km`, `1,000`처럼 적어도 됨), 업적에 반영되지 않는 단위를 경고하며,
+저장하면 달성할 업적과 가까워지는 업적을 입력하는 대로 보여 줍니다.
+
+기본 업적 목록이 바뀌면 기존 사용자의 데이터에도 새 카테고리와 업적이 더해집니다. 직접 고친 업적, 지운 업적과 카테고리는 그대로 둡니다.
+
+규칙 전체와 기본 목록, 변경 내역은 [docs/achievement-system.md](docs/achievement-system.md)에 정리되어 있습니다.
 
 ## 구조
 
@@ -58,14 +68,19 @@ src/
 │   ├── UIContext.jsx            # 어디서나 여는 시트: 기록하기, 업적 상세, 설정
 │   └── ToastContext.jsx         # 알림(되돌리기 버튼 포함)
 ├── lib/
-│   ├── appState.js              # 저장 형식 v2, 정규화, v1 → v2 마이그레이션, 백업 파일
+│   ├── appState.js              # 저장 형식 v2, 정규화, v1 → v2 이전, 기본 목록 업그레이드, 백업 파일
+│   ├── catalogSnapshot.js       # 기본 목록의 스냅숏·digest (npm run catalog:snapshot)
 │   └── localStore.js            # localStorage 읽기/쓰기
 ├── utils/
 │   ├── achievementEvaluator.js  # 업적 계산 엔진
 │   ├── achievementText.js       # 조건·진행도 문구
-│   ├── units.js / dates.js      # 단위 환산, 날짜·연속 기록
+│   ├── units.js / dates.js      # 단위 환산·값 입력 해석, 날짜·기간·연속 기록
 │   └── suggestions.js           # 기록할 때 보여 줄 추천 태그·단위
-├── data/                        # 기본 카테고리, 기본 업적 목록
+├── data/
+│   ├── categories.js            # 기본 카테고리 71개
+│   ├── achievements.js          # 기본 업적 목록 (catalog/ 의 분야별 파일을 모음)
+│   ├── catalog/                 # 분야별 기본 업적 786개
+│   └── catalogHistory.js        # 예전 기본 목록의 스냅숏, 목록 버전
 ├── pages/                       # 홈(Dashboard), 기록(RecordHub), 업적(AchievementManagement), 진열장(AchievementShowcase)
 └── components/                  # 화면 조각 (Modal, Medal, AchievementCard, RecordEditorModal …)
 ```

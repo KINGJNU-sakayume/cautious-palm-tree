@@ -34,9 +34,21 @@ function readLegacyPrefs(ls) {
   return prefs
 }
 
+/** Tells a returning user what a catalog upgrade added, or null. */
+export function catalogUpgradeNotice(before, after) {
+  if (!before || (before.catalogVersion ?? 1) >= after.catalogVersion) return null
+  const count = list => (Array.isArray(list) ? list.length : 0)
+  const achievements = count(after.achievements) - count(before.achievements)
+  const categories = count(after.categories) - count(before.categories)
+  if (achievements <= 0) return null
+  const what = categories > 0 ? `카테고리 ${categories}개와 업적 ${achievements}개가` : `업적 ${achievements}개가`
+  return `새 ${what} 추가됐어요. 지금까지 남긴 기록으로 달성한 업적은 바로 반영돼요.`
+}
+
 /**
  * @returns {{ state: object, notice: string|null }}
- * `notice` explains when stored data couldn't be used as-is.
+ * `notice` explains when stored data couldn't be used as-is, or what an
+ * upgrade of the built-in catalog added.
  */
 export function loadAppState() {
   const ls = storage()
@@ -47,7 +59,9 @@ export function loadAppState() {
   try {
     raw = ls.getItem(STORAGE_KEY)
     if (!raw) return { state: createDefaultState(legacyPrefs), notice: null }
-    return { state: stateFromPayload(JSON.parse(raw), legacyPrefs), notice: null }
+    const payload = JSON.parse(raw)
+    const state = stateFromPayload(payload, legacyPrefs)
+    return { state, notice: catalogUpgradeNotice(payload?.data, state) }
   } catch (error) {
     console.warn('Stored app state could not be read; starting fresh.', error)
     // Keep the unreadable copy so nothing is silently lost (once per distinct copy).

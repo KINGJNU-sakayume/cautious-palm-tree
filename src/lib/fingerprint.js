@@ -1,5 +1,6 @@
 // Short, stable fingerprint of an achievement definition. Used by the storage
-// migration to tell an untouched built-in achievement from one the user edited.
+// migrations and catalog upgrades to tell an untouched built-in achievement
+// from one the user edited.
 
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
@@ -34,4 +35,24 @@ export function fingerprintV1Achievement(a) {
     condition: a.condition ?? null,
     isHidden: !!a.isHidden,
   }))
+}
+
+/** Short hash of any JSON-like value; key order doesn't matter. */
+export function digest(value) {
+  return hash(stableStringify(value))
+}
+
+/**
+ * Fingerprint of a (normalised) v2 achievement definition: the fields the
+ * editor can change. `manualEarnedAt` is progress, not definition, so it's left out.
+ */
+export function fingerprintAchievement(a) {
+  return digest({
+    title: a.title ?? '',
+    description: a.description ?? '',
+    categoryId: a.categoryId ?? null,
+    tier: a.tier ?? null,
+    condition: a.condition ?? null,
+    isHidden: !!a.isHidden,
+  })
 }

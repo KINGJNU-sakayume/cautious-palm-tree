@@ -13,6 +13,10 @@ import { getCategoryPath, getSubtreeIds } from '@/utils/categoryTree.js'
 import { formatDateShort } from '@/utils/formatters.js'
 import { AlertIcon, ChevronDownIcon, EyeOffIcon, FolderIcon, MedalIcon, PlusIcon, SearchIcon, XIcon } from '@/components/Icons.jsx'
 
+// Without a search or category filter, long groups (피트니스 has 200+) show
+// this many rows until expanded.
+const GROUP_PREVIEW = 20
+
 const STATUS_FILTERS = [
   { id: 'all', label: '전체' },
   { id: 'progress', label: '진행 중' },
@@ -78,6 +82,7 @@ export default function AchievementManagement() {
   const [categoryId, setCategoryId] = useState(null)
   const [search, setSearch] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [expanded, setExpanded] = useState(() => new Set())
 
   // Links from other screens: { editId }, { create, categoryId } or { categoryId }.
   useEffect(() => {
@@ -125,6 +130,7 @@ export default function AchievementManagement() {
       .map(([id, list]) => ({ id, name: id ? categories.find(c => c.id === id)?.name : '모든 기록', list }))
   }, [filtered, categories])
 
+  const capped = !query && !activeCategory
   const earnedCount = achievements.filter(a => a.isEarned).length
   const filtersActive = status !== 'all' || !!tier || !!activeCategory || !!query
   const clearFilters = () => { setStatus('all'); setTier(''); setCategoryId(null); setSearch('') }
@@ -223,10 +229,25 @@ export default function AchievementManagement() {
               </span>
             </h2>
             <ul className="card divide-y divide-line overflow-hidden">
-              {group.list.map(a => (
+              {(capped && !expanded.has(group.id) ? group.list.slice(0, GROUP_PREVIEW) : group.list).map(a => (
                 <AchievementRow key={a.id} achievement={a} categories={categories} rootId={group.id} onOpen={setEditing} />
               ))}
             </ul>
+            {capped && group.list.length > GROUP_PREVIEW && (
+              <button
+                type="button"
+                className="mt-2 w-full btn btn-sm btn-ghost"
+                onClick={() => setExpanded(prev => {
+                  const next = new Set(prev)
+                  if (next.has(group.id)) next.delete(group.id)
+                  else next.add(group.id)
+                  return next
+                })}
+                aria-expanded={expanded.has(group.id)}
+              >
+                {expanded.has(group.id) ? '접기' : `${group.list.length - GROUP_PREVIEW}개 더 보기`}
+              </button>
+            )}
           </section>
         ))}
       </div>

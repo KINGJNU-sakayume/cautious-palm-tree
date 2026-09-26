@@ -36,6 +36,34 @@ export function daysBetween(from, to) {
   return Math.round((parseDateStr(to) - parseDateStr(from)) / 86400000)
 }
 
+const dayIndexCache = new Map()
+
+/**
+ * Days since 1970-01-01 for a 'YYYY-MM-DD' string — plain calendar arithmetic,
+ * so consecutive days always differ by exactly 1 (no time zones or DST).
+ */
+export function dayIndex(dateStr) {
+  let n = dayIndexCache.get(dateStr)
+  if (n === undefined) {
+    n = Date.UTC(Number(dateStr.slice(0, 4)), Number(dateStr.slice(5, 7)) - 1, Number(dateStr.slice(8, 10))) / 86400000
+    dayIndexCache.set(dateStr, n)
+  }
+  return n
+}
+
+/**
+ * Number of the calendar period ('day', 'week', 'month' or 'year') a date falls
+ * in. Consecutive periods differ by 1. Weeks run Monday–Sunday.
+ */
+export function periodIndex(dateStr, period) {
+  switch (period) {
+    case 'week': return Math.floor((dayIndex(dateStr) + 3) / 7) // 1970-01-01 was a Thursday
+    case 'month': return Number(dateStr.slice(0, 4)) * 12 + Number(dateStr.slice(5, 7)) - 1
+    case 'year': return Number(dateStr.slice(0, 4))
+    default: return dayIndex(dateStr)
+  }
+}
+
 export function uniqueSortedDates(records) {
   return [...new Set(records.map(r => r.date).filter(isValidDateStr))].sort()
 }
@@ -46,9 +74,10 @@ export function longestStreak(sortedDates) {
   let run = 0
   let prev = null
   for (const date of sortedDates) {
-    run = prev && addDays(prev, 1) === date ? run + 1 : 1
+    const day = dayIndex(date)
+    run = prev != null && day === prev + 1 ? run + 1 : 1
     if (run > longest) longest = run
-    prev = date
+    prev = day
   }
   return longest
 }

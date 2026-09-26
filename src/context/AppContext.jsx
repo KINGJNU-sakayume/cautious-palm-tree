@@ -3,7 +3,7 @@ import { evaluateAchievements, isMetaCondition } from '@/utils/achievementEvalua
 import { getDescendantIds } from '@/utils/categoryTree.js'
 import { generateId } from '@/utils/formatters.js'
 import { getTier } from '@/constants/tiers.js'
-import { createDefaultState, normalizeTags, stateFromPayload, toBackup, PIN_SLOTS } from '@/lib/appState.js'
+import { createDefaultState, normalizeTags, recordFromInput, stateFromPayload, toBackup, PIN_SLOTS } from '@/lib/appState.js'
 import { STORAGE_KEY, isQuotaError, loadAppState, serializeState, writeSerializedState } from '@/lib/localStore.js'
 import { useToast } from './ToastContext.jsx'
 
@@ -76,6 +76,7 @@ function reducer(state, action) {
       const categoryDefaults = { ...state.prefs.categoryDefaults }
       removed.forEach(id => delete categoryDefaults[id])
       return {
+        ...state,
         categories: state.categories.filter(c => !removed.has(c.id)),
         // Records move up to the deleted category's parent (or become uncategorised).
         records: state.records.map(r => (removed.has(r.categoryId) ? { ...r, categoryId: target.parentId ?? null } : r)),
@@ -104,25 +105,20 @@ function reducer(state, action) {
 
 // ── Input cleaning ───────────────────────────────────────────────────────────
 
-function cleanRecord(input) {
-  const value = input.value === '' || input.value == null ? null : Number(input.value)
-  return {
-    id: input.id || generateId('rec'),
-    categoryId: input.categoryId ?? null,
-    date: input.date,
-    value: Number.isFinite(value) ? value : null,
-    unit: input.unit?.trim() || null,
-    memo: input.memo?.trim() || null,
-    photoUrl: input.photoUrl || null,
-    tags: normalizeTags(input.tags),
-  }
+function cleanCondition(input) {
+  const condition = { ...input }
+  // A unit only matters for a threshold on these.
+  if (['count', 'days', 'streak'].includes(condition.type) && condition.minValue == null) delete condition.unit
+  // meta_count / meta_clear follow the achievement's own category.
+  if (condition.type === 'meta_count' || condition.type === 'meta_clear') delete condition.categoryId
+  if (condition.type === 'meta_count' && !condition.minTier) delete condition.minTier
+  if (condition.type === 'tag_set_complete') condition.tags = normalizeTags(condition.tags)
+  if (condition.type === 'composite') condition.conditions = (condition.conditions || []).map(cleanCondition)
+  return condition
 }
 
 function cleanAchievement(input) {
-  const condition = JSON.parse(JSON.stringify(input.condition))
-  // meta_count / meta_clear follow the achievement's own category.
-  if (condition.type === 'meta_count' || condition.type === 'meta_clear') delete condition.categoryId
-  if (condition.type === 'tag_set_complete') condition.tags = normalizeTags(condition.tags)
+  const condition = cleanCondition(JSON.parse(JSON.stringify(input.condition)))
   return {
     id: input.id || generateId('ach'),
     title: input.title.trim(),
@@ -227,13 +223,13 @@ export function AppProvider({ children }) {
 
   // ── Records ──
   const addRecord = useCallback((input) => {
-    const record = cleanRecord(input)
+    const record = recordFromInput(input)
     dispatch({ type: 'RECORD_ADD', record })
     return record
   }, [])
 
   const updateRecord = useCallback((input) => {
-    dispatch({ type: 'RECORD_UPDATE', record: cleanRecord(input) })
+    dispatch({ type: 'RECORD_UPDATE', record: recordFromInput(input) })
   }, [])
 
   const deleteRecord = useCallback((id) => {

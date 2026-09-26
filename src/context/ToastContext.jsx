@@ -8,6 +8,9 @@ const ToastApiContext = createContext(null)
 const DURATION_MS = { achievement: 6000, success: 3500, info: 5000, error: 7000 }
 const WITH_ACTION_MS = 7000
 const MAX_VISIBLE = 4
+// A back-dated record or an imported backup can complete dozens at once;
+// celebrate the first few and sum up the rest.
+const MAX_ACHIEVEMENT_TOASTS = 3
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
@@ -34,10 +37,20 @@ export function ToastProvider({ children }) {
     success: (message, options) => push({ kind: 'success', message, ...options }),
     info: (message, options) => push({ kind: 'info', message, ...options }),
     error: (message, options) => push({ kind: 'error', message, ...options }),
-    /** Celebrate newly earned achievements, one after another. */
-    achievements: (list) => list.forEach((achievement, i) => {
-      setTimeout(() => push({ kind: 'achievement', achievement }), i * TOAST_STAGGER_MS)
-    }),
+    /** Celebrate newly earned achievements (most important first), one after another. */
+    achievements: (list) => {
+      const shown = list.slice(0, MAX_ACHIEVEMENT_TOASTS)
+      shown.forEach((achievement, i) => {
+        setTimeout(() => push({ kind: 'achievement', achievement }), i * TOAST_STAGGER_MS)
+      })
+      const rest = list.length - shown.length
+      if (rest > 0) {
+        setTimeout(
+          () => push({ kind: 'info', message: `업적 ${rest}개를 더 달성했어요. 진열장에서 모두 볼 수 있어요.` }),
+          shown.length * TOAST_STAGGER_MS,
+        )
+      }
+    },
     dismiss,
   }), [push, dismiss])
 

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { evaluateAchievements, conditionError, normalizeTag } from './achievementEvaluator.js'
-import { convertValue } from './units.js'
-import { currentStreak, longestStreak } from './dates.js'
+import { describeCondition, progressLabel } from './achievementText.js'
+import { canConvert, convertValue, parseValueInput } from './units.js'
+import { currentStreak, dayIndex, longestStreak, periodIndex } from './dates.js'
 
 const categories = [
   { id: 'fit', name: '피트니스', parentId: null },
@@ -197,6 +198,120 @@ describe('record-based conditions', () => {
     expect(r.earned).toBe(false)
     expect(r.error).toBeTruthy()
   })
+
+  it('negative values never count toward a goal', () => {
+    const records = [
+      rec('run', '2026-01-01', 8, { unit: 'km' }),
+      rec('run', '2026-01-02', -5, { unit: 'km' }),
+      rec('run', '2026-01-03', 2, { unit: 'km' }),
+    ]
+    const results = evaluate([
+      ach('sum', 'run', { type: 'cumulative', target: 10, unit: 'km' }),
+      ach('day', 'run', { type: 'daily_cumulative', target: 8, unit: 'km' }),
+    ], records)
+    expect(results.get('sum')).toMatchObject({ earned: true, earnedAt: '2026-01-03', progress: 10 })
+    expect(results.get('day')).toMatchObject({ earned: true, earnedAt: '2026-01-01' })
+  })
+
+  it('count can require a minimum value per record', () => {
+    const records = [
+      rec('bench', '2026-01-01', 55, { unit: 'kg' }),
+      rec('bench', '2026-01-02', 60, { unit: 'kg' }),
+      rec('bench', '2026-01-03', 132, { unit: 'lb' }), // ≈ 59.9kg
+      rec('bench', '2026-01-04', 62.5, { unit: 'kg' }),
+    ]
+    const r = evaluate([ach('a', 'bench', { type: 'count', target: 2, minValue: 60, unit: 'kg' })], records).get('a')
+    expect(r).toMatchObject({ earned: true, earnedAt: '2026-01-04', progress: 2 })
+  })
+})
+
+describe('day and period conditions', () => {
+  it('days counts distinct days, not records', () => {
+    const records = ['2026-01-01', '2026-01-01', '2026-01-03', '2026-01-09'].map(d => rec('run', d))
+    const results = evaluate([
+      ach('three', 'run', { type: 'days', target: 3 }),
+      ach('four', 'run', { type: 'days', target: 4 }),
+    ], records)
+    expect(results.get('three')).toMatchObject({ earned: true, earnedAt: '2026-01-09', progress: 3 })
+    expect(results.get('four')).toMatchObject({ earned: false, progress: 3 })
+  })
+
+  it('days and streak with a minimum add up each day', () => {
+    const records = [
+      rec('read', '2026-01-01', 1.5, { unit: 'L' }),
+      rec('read', '2026-01-01', 500, { unit: 'ml' }), // day 1: 2L
+      rec('read', '2026-01-02', 2, { unit: 'L' }), // day 2: 2L
+      rec('read', '2026-01-03', 1, { unit: 'L' }), // day 3: 1L — breaks the run
+      rec('read', '2026-01-04', 2.5, { unit: 'L' }),
+    ]
+    const results = evaluate([
+      ach('days', 'read', { type: 'days', target: 3, minValue: 2, unit: 'L' }),
+      ach('streak', 'read', { type: 'streak', target: 3, minValue: 2, unit: 'L' }),
+      ach('plain', 'read', { type: 'streak', target: 4 }),
+    ], records)
+    expect(results.get('days')).toMatchObject({ earned: true, earnedAt: '2026-01-04', progress: 3 })
+    expect(results.get('streak')).toMatchObject({ earned: false, progress: 2 })
+    expect(results.get('plain')).toMatchObject({ earned: true, earnedAt: '2026-01-04' })
+  })
+
+  it('period_cumulative sums within calendar weeks (Monday–Sunday)', () => {
+    const records = [
+      rec('run', '2026-01-04', 30, { unit: 'km' }), // Sunday — previous week
+      rec('run', '2026-01-05', 10, { unit: 'km' }), // Monday
+      rec('run', '2026-01-07', 15, { unit: 'km' }),
+      rec('run', '2026-01-11', 20, { unit: 'km' }), // Sunday — same week: 45km
+      rec('run', '2026-01-12', 40, { unit: 'km' }),
+    ]
+    const results = evaluate([
+      ach('week', 'run', { type: 'period_cumulative', period: 'week', target: 45, unit: 'km' }),
+      ach('month', 'run', { type: 'period_cumulative', period: 'month', target: 100, unit: 'km' }),
+      ach('year', 'run', { type: 'period_cumulative', period: 'year', target: 116, unit: 'km' }),
+    ], records)
+    expect(results.get('week')).toMatchObject({ earned: true, earnedAt: '2026-01-11', progress: 45 })
+    expect(results.get('month')).toMatchObject({ earned: true, earnedAt: '2026-01-12', progress: 115 })
+    expect(results.get('year')).toMatchObject({ earned: false, progress: 115 })
+  })
+
+  it('period_streak needs enough record days in consecutive weeks', () => {
+    const days = [
+      '2026-01-05', '2026-01-06', '2026-01-08', // week 1: 3 days
+      '2026-01-12', '2026-01-12', '2026-01-14', '2026-01-18', // week 2: 3 days (one twice)
+      '2026-01-19', '2026-01-20', // week 3: 2 days — too few
+      '2026-01-26', '2026-01-27', '2026-01-28', // week 4: 3 days
+    ]
+    const records = days.map(d => rec('run', d))
+    const results = evaluate([
+      ach('two', 'run', { type: 'period_streak', period: 'week', target: 2, minDays: 3 }),
+      ach('three', 'run', { type: 'period_streak', period: 'week', target: 3, minDays: 3 }),
+      ach('weekly', 'run', { type: 'period_streak', period: 'week', target: 4 }),
+    ], records)
+    expect(results.get('two')).toMatchObject({ earned: true, earnedAt: '2026-01-18', progress: 2 })
+    expect(results.get('three')).toMatchObject({ earned: false, progress: 2 })
+    expect(results.get('weekly')).toMatchObject({ earned: true, earnedAt: '2026-01-26', progress: 4 })
+  })
+
+  it('period_streak by month crosses the year boundary', () => {
+    const records = ['2025-11-30', '2025-12-01', '2026-01-31', '2026-03-01'].map(d => rec('run', d))
+    const r = evaluate([ach('a', 'run', { type: 'period_streak', period: 'month', target: 3 })], records).get('a')
+    expect(r).toMatchObject({ earned: true, earnedAt: '2026-01-31', progress: 3 })
+  })
+
+  it('category_count counts subcategories inside a category and every category outside', () => {
+    const records = [
+      rec('fit', '2026-01-01'), // filed directly under the scope — not a subcategory
+      rec('run', '2026-01-02'),
+      rec('bench', '2026-01-03'),
+      rec('run', '2026-01-04'),
+      rec('read', '2026-01-05'),
+      rec(null, '2026-01-06'),
+    ]
+    const results = evaluate([
+      ach('fit', 'fit', { type: 'category_count', target: 2 }),
+      ach('all', null, { type: 'category_count', target: 4 }),
+    ], records)
+    expect(results.get('fit')).toMatchObject({ earned: true, earnedAt: '2026-01-03', progress: 2 })
+    expect(results.get('all')).toMatchObject({ earned: true, earnedAt: '2026-01-05', progress: 4 })
+  })
 })
 
 describe('meta conditions', () => {
@@ -244,6 +359,18 @@ describe('meta conditions', () => {
     expect(results.get('outer')).toMatchObject({ earned: true, earnedAt: '2026-01-02' })
   })
 
+  it('meta_count can count only achievements of a tier or higher', () => {
+    const results = evaluate([
+      ach('b', 'run', { type: 'action' }),
+      ach('g', 'run', { type: 'count', target: 2 }, { tier: 'gold' }),
+      ach('d', 'bench', { type: 'action' }, { tier: 'diamond' }),
+      ach('gold+', null, { type: 'meta_count', target: 2, minTier: 'gold' }),
+      ach('diamond', null, { type: 'meta_count', target: 2, minTier: 'diamond' }),
+    ], records)
+    expect(results.get('gold+')).toMatchObject({ earned: true, earnedAt: '2026-01-05', progress: 2 })
+    expect(results.get('diamond')).toMatchObject({ earned: false, progress: 1 })
+  })
+
   it('a cycle of meta achievements settles without unlocking', () => {
     const results = evaluate([
       ach('x', null, { type: 'meta_list', achievementIds: ['y'] }),
@@ -263,6 +390,39 @@ describe('helpers', () => {
     expect(conditionError({ type: 'composite', operator: 'AND', conditions: [{ type: 'action' }] })).toBeNull()
   })
 
+  it('conditionError validates the newer condition types', () => {
+    expect(conditionError({ type: 'days', target: 10 })).toBeNull()
+    expect(conditionError({ type: 'streak', target: 7, minValue: 2, unit: 'L' })).toBeNull()
+    expect(conditionError({ type: 'streak', target: 7, minValue: '', unit: 'L' })).toBeTruthy()
+    expect(conditionError({ type: 'count', target: 3, minValue: 0 })).toBeTruthy()
+    expect(conditionError({ type: 'period_cumulative', period: 'month', target: 100, unit: 'km' })).toBeNull()
+    expect(conditionError({ type: 'period_cumulative', period: 'day', target: 100 })).toBeTruthy()
+    expect(conditionError({ type: 'period_streak', period: 'week', target: 4, minDays: 3 })).toBeNull()
+    expect(conditionError({ type: 'period_streak', period: 'week', target: 4, minDays: 8 })).toBeTruthy()
+    expect(conditionError({ type: 'period_streak', period: 'year', target: 2 })).toBeTruthy()
+    expect(conditionError({ type: 'category_count', target: 0 })).toBeTruthy()
+    expect(conditionError({ type: 'meta_count', target: 3, minTier: 'gold' })).toBeNull()
+    expect(conditionError({ type: 'meta_count', target: 3, minTier: 'mythic' })).toBeTruthy()
+  })
+
+  it('describes the newer condition types', () => {
+    const text = (condition, achievement = null) => describeCondition(condition, { achievement })
+    expect(text({ type: 'days', target: 30, minValue: 10000, unit: '걸음' })).toBe('하루 10,000걸음 이상인 날 30일')
+    expect(text({ type: 'streak', target: 7, minValue: 2, unit: 'L' })).toBe('하루 2L 이상 7일 연속')
+    expect(text({ type: 'count', target: 10, minValue: 60, unit: 'kg' })).toBe('60kg 이상 기록 10회')
+    expect(text({ type: 'period_cumulative', period: 'month', target: 100, unit: 'km' })).toBe('한 달 합계 100km 이상')
+    expect(text({ type: 'period_streak', period: 'week', target: 12, minDays: 3 })).toBe('주 3일 이상 기록 12주 연속')
+    expect(text({ type: 'period_streak', period: 'week', target: 1, minDays: 7 })).toBe('한 주에 7일 모두 기록')
+    expect(text({ type: 'period_streak', period: 'month', target: 12, minDays: 1 })).toBe('매달 기록 12개월 연속')
+    expect(text({ type: 'category_count', target: 5 })).toBe('카테고리 5곳에 기록')
+    expect(text({ type: 'category_count', target: 5 }, { categoryId: 'fit' })).toBe('하위 카테고리 5곳에 기록')
+    expect(text({ type: 'meta_count', target: 3, minTier: 'gold' })).toBe('골드 이상 업적 3개 달성')
+    expect(progressLabel({ condition: { type: 'period_streak', period: 'month', target: 12 }, progress: 3, target: 12 }))
+      .toBe('최장 3 / 12개월')
+    expect(progressLabel({ condition: { type: 'period_cumulative', period: 'week', unit: 'km' }, progress: 32, target: 50 }))
+      .toBe('한 주 최고 32 / 50km')
+  })
+
   it('normalizeTag strips #, spaces and case', () => {
     expect(normalizeTag('#Morning Run')).toBe('morningrun')
   })
@@ -273,6 +433,36 @@ describe('helpers', () => {
     expect(convertValue(3, '만원', '원')).toBe(30000)
     expect(convertValue(5, 'kg', 'km')).toBeNull()
     expect(convertValue(5, '', 'km')).toBe(5)
+    expect(convertValue(120, '쪽', '페이지')).toBe(120)
+    expect(convertValue(8000, '보', '걸음')).toBe(8000)
+    expect(convertValue(50, '개', '회')).toBe(50)
+    expect(convertValue(2, '억', '만원')).toBe(20000)
+    expect(convertValue(1, 'mile', 'km')).toBeCloseTo(1.609344)
+    expect(canConvert('ml', 'L')).toBe(true)
+    expect(canConvert('분', 'km')).toBe(false)
+  })
+
+  it('parseValueInput reads numbers, separators and a trailing unit', () => {
+    expect(parseValueInput('')).toEqual({ value: null, unit: null })
+    expect(parseValueInput('5.2')).toEqual({ value: 5.2, unit: null })
+    expect(parseValueInput('1,000')).toEqual({ value: 1000, unit: null })
+    expect(parseValueInput('5km')).toEqual({ value: 5, unit: 'km' })
+    expect(parseValueInput('3 만원')).toEqual({ value: 3, unit: '만원' })
+    expect(parseValueInput('-3')).toEqual({ value: -3, unit: null })
+    expect(parseValueInput('다섯').error).toBe(true)
+    expect(parseValueInput('1시간 30분').error).toBe(true)
+  })
+
+  it('day and period indexes', () => {
+    expect(dayIndex('1970-01-01')).toBe(0)
+    expect(dayIndex('2026-03-01') - dayIndex('2026-02-28')).toBe(1)
+    expect(dayIndex('2024-03-01') - dayIndex('2024-02-28')).toBe(2) // leap year
+    // Weeks run Monday–Sunday: 2026-01-05 is a Monday, 2026-01-11 a Sunday.
+    expect(periodIndex('2026-01-11', 'week')).toBe(periodIndex('2026-01-05', 'week'))
+    expect(periodIndex('2026-01-12', 'week')).toBe(periodIndex('2026-01-11', 'week') + 1)
+    expect(periodIndex('2026-01-04', 'week')).toBe(periodIndex('2026-01-05', 'week') - 1)
+    expect(periodIndex('2026-01-31', 'month')).toBe(periodIndex('2025-12-01', 'month') + 1)
+    expect(periodIndex('2026-06-30', 'year')).toBe(2026)
   })
 
   it('streak helpers', () => {

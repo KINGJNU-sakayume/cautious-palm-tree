@@ -1,0 +1,71 @@
+// 기술: 코딩(시간) · 알고리즘(문제)
+
+import { action, count, daily, define, days, metaCount, streak, tag, tagCount, tagSet, total } from './helpers.js'
+
+const PROBLEM_TYPES = ['구현', '그리디', 'DP', 'BFS', 'DFS', '이분탐색', '정렬']
+
+export default [
+  // ── 기술 전체 ─────────────────────────────────────────────────────────────
+  define('ach-tech-001', 'cat-tech', 'gold', '개발 100일', '코딩이나 알고리즘을 기록한 날을 100일 채워 보세요.',
+    days(100)),
+  define('ach-tech-002', 'cat-tech', 'gold', '테크 러버', '기술 업적 10개를 달성해 보세요.',
+    metaCount(10)),
+
+  // ── 코딩 (시간) ────────────────────────────────────────────────────────────
+  define('ach-coding-001', 'cat-coding', 'bronze', 'Hello, World!', '첫 코딩을 기록해 보세요.',
+    action()),
+  define('ach-coding-004', 'cat-coding', 'silver', '일주일 코딩', '7일 연속으로 코딩해 보세요.',
+    streak(7)),
+  define('ach-coding-002', 'cat-coding', 'gold', '1일 1커밋', '30일 연속으로 코딩을 기록해 보세요.',
+    streak(30)),
+  define('ach-coding-005', 'cat-coding', 'platinum', '100일 연속 코딩', '100일 연속으로 코딩해 보세요.',
+    streak(100)),
+  define('ach-coding-006', 'cat-coding', 'diamond', '365일 잔디', '365일 연속으로 코딩했어요. 잔디가 빈틈없이 채워졌어요.',
+    streak(365)),
+  define('ach-coding-007', 'cat-coding', 'gold', '코딩 100시간', '코딩한 시간을 합쳐 100시간을 채워 보세요.',
+    total(100, '시간')),
+  define('ach-coding-008', 'cat-coding', 'platinum', '코딩 1,000시간', '코딩한 시간을 합쳐 1,000시간을 채워 보세요.',
+    total(1000, '시간')),
+  define('ach-coding-009', 'cat-coding', 'gold', '몰입의 날', '하루 동안 코딩한 시간을 합쳐 8시간을 채워 보세요.',
+    daily(8, '시간')),
+  define('ach-coding-013', 'cat-coding', 'silver', '코드 정원사', "코드를 정리한 날 '리팩터링' 태그를 붙여 10번 기록해 보세요.",
+    tagCount('리팩터링', 10)),
+  define('ach-coding-014', 'cat-coding', 'silver', '버그 사냥꾼', "까다로운 버그를 잡은 날 '디버깅' 태그를 붙여 10번 기록해 보세요.",
+    tagCount('디버깅', 10)),
+  define('ach-coding-003', 'cat-coding', 'gold', '첫 출시', "만든 것을 세상에 내놓은 날 '출시' 태그를 붙여 기록해 보세요.",
+    tag('출시')),
+  define('ach-coding-012', 'cat-coding', 'platinum', '연쇄 출시범', "'출시' 태그를 붙인 기록을 5번 남겨 보세요.",
+    tagCount('출시', 5)),
+  define('ach-coding-010', 'cat-coding', 'gold', '첫 오픈소스 기여', "오픈소스 프로젝트에 기여하고 '오픈소스' 태그를 붙여 보세요.",
+    tag('오픈소스')),
+  define('ach-coding-011', 'cat-coding', 'gold', '해커톤 완주', "해커톤에 참가하고 '해커톤' 태그를 붙여 보세요.",
+    tag('해커톤')),
+  define('ach-coding-015', 'cat-coding', 'gold', '풀스택', '프론트엔드·백엔드·데이터베이스·배포를 모두 다뤄 보고 태그로 남겨 보세요.',
+    tagSet(['프론트엔드', '백엔드', '데이터베이스', '배포'])),
+
+  // ── 알고리즘 (문제) ────────────────────────────────────────────────────────
+  define('ach-algo-001', 'cat-algorithms', 'bronze', '첫 문제', '알고리즘 문제를 처음 풀고 기록해 보세요.',
+    action()),
+  define('ach-algo-002', 'cat-algorithms', 'silver', '문제 풀이 입문', '푼 문제를 합쳐 10문제를 채워 보세요.',
+    total(10, '문제')),
+  define('ach-algo-003', 'cat-algorithms', 'gold', '백 문제 돌파', '푼 문제를 합쳐 100문제를 채워 보세요.',
+    total(100, '문제')),
+  define('ach-algo-004', 'cat-algorithms', 'platinum', '500문제', '푼 문제를 합쳐 500문제를 채워 보세요.',
+    total(500, '문제')),
+  define('ach-algo-005', 'cat-algorithms', 'diamond', '1,000문제', '푼 문제를 합쳐 1,000문제를 채워 보세요.',
+    total(1000, '문제')),
+  define('ach-algo-008', 'cat-algorithms', 'gold', '하루 10문제', '하루 동안 문제를 합쳐 10문제 풀어 보세요.',
+    daily(10, '문제')),
+  define('ach-algo-006', 'cat-algorithms', 'gold', '1일 1문제 한 달', '30일 연속으로 문제를 풀어 보세요.',
+    streak(30)),
+  define('ach-algo-007', 'cat-algorithms', 'platinum', '1일 1문제 100일', '100일 연속으로 문제를 풀어 보세요.',
+    streak(100)),
+  define('ach-algo-012', 'cat-algorithms', 'silver', '문제 풀이 20회', '문제 풀이를 20번 기록해 보세요.',
+    count(20)),
+  define('ach-algo-009', 'cat-algorithms', 'platinum', '알고리즘 유형 정복', '구현·그리디·DP·BFS·DFS·이분탐색·정렬 문제를 모두 풀고 유형을 태그로 남겨 보세요.',
+    tagSet(PROBLEM_TYPES)),
+  define('ach-algo-010', 'cat-algorithms', 'silver', '코딩 테스트', "코딩 테스트를 보고 '코딩테스트' 태그를 붙여 보세요.",
+    tag('코딩테스트')),
+  define('ach-algo-011', 'cat-algorithms', 'gold', '알고리즘 대회', "알고리즘 대회에 참가하고 '대회' 태그를 붙여 보세요.",
+    tag('대회')),
+]
