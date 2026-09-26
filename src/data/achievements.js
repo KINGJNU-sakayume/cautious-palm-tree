@@ -21,6 +21,10 @@ import career from './catalog/career.js'
 import finance from './catalog/finance.js'
 import tech from './catalog/tech.js'
 import community from './catalog/community.js'
+import lifeMilestones from './catalog/lifeMilestones.js'
+import experiencePoints from './catalog/experiencePoints.js'
+import chaosEvents from './catalog/chaosEvents.js'
+import legendary from './catalog/legendary.js'
 
 export const achievements = [
   ...general,
@@ -35,4 +39,8 @@ export const achievements = [
   ...finance,
   ...tech,
   ...community,
+  ...lifeMilestones,
+  ...experiencePoints,
+  ...chaosEvents,
+  ...legendary,
 ]
