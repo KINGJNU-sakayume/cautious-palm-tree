@@ -67,13 +67,17 @@ export function conditionSummaryText(condition, progress) {
       return `단일 기록 ≥ ${condition.target}${condition.unit ? ' ' + condition.unit : ''}`
     case 'streak':
       return `${condition.target}일 연속 달성`
+    case 'daily_cumulative':
+      return `하루 합계 ${condition.target}${condition.unit ? ' ' + condition.unit : ''} 달성`
+    case 'cross_category_cumulative':
+      return `여러 카테고리 합산 ${condition.target}${condition.unit ? ' ' + condition.unit : ''} 달성`
     case 'tag_match':
       return `태그 "${condition.tag}" 기록 1개 이상`
     case 'tag_count':
       return `태그 "${condition.tag}" 기록 ${condition.target}회 달성`
     case 'composite': {
       const parts = condition.conditions.map(c => conditionSummaryText(c))
-      return parts.join(` ${condition.operator} `)
+      return parts.join(condition.operator === 'OR' ? ' 또는 ' : ' 그리고 ')
     }
     case 'meta_count':
       return `카테고리 내 업적 ${condition.target}개 획득`
@@ -130,9 +134,11 @@ export function generateId(prefix = 'id') {
  */
 export function getConditionTarget(condition) {
   if (!condition) return 1
-  if (condition.target) return condition.target
-  if (condition.conditions?.[0]?.target) return condition.conditions[0].target
-  if (condition.type === 'action') return 1
+  if (condition.type === 'composite') return 100
+  if (condition.type === 'tag_set_complete') return condition.tags?.length || 1
+  if (condition.type === 'meta_list') return condition.achievementIds?.length || 1
+  if (condition.target != null) return condition.target
+  if (condition.type === 'action' || condition.type === 'tag_match' || condition.type === 'meta_clear') return 1
   return 1
 }
 
@@ -173,7 +179,8 @@ export function truncateCategoryPathLeft(text, maxLen = 38) {
  * Full rarity display string, appending "(희귀)" for achievements below 5%.
  */
 export function rarityText(rarity) {
-  return rarity < 5 ? `${rarity}% (희귀)` : `${rarity}%`
+  if (rarity == null || Number.isNaN(Number(rarity))) return '—'
+  return rarity < 5 ? `${rarity} (희귀)` : String(rarity)
 }
 
 /**
