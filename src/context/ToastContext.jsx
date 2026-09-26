@@ -1,72 +1,62 @@
-import React, { createContext, useContext, useReducer, useCallback, useRef } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { generateId } from '@/utils/formatters.js'
-import { TOAST_DURATION_MS, TOAST_DISMISS_ANIM_MS, TOAST_STAGGER_MS } from '@/constants/timing.js'
+import { TOAST_DISMISS_ANIM_MS, TOAST_STAGGER_MS } from '@/constants/timing.js'
 
-const ToastContext = createContext(null)
+const ToastStateContext = createContext(null)
+const ToastApiContext = createContext(null)
 
-function toastReducer(state, action) {
-  switch (action.type) {
-    case 'ADD_TOAST':
-      return [...state, { id: action.id, achievement: action.achievement, isLeaving: false }]
-    case 'ADD_ERROR_TOAST':
-      return [...state, { ...action.toast, isLeaving: false }]
-    case 'ADD_TOASTS':
-      return [
-        ...state,
-        ...action.achievements.map(a => ({ id: generateId('toast'), achievement: a, isLeaving: false })),
-      ]
-    case 'START_DISMISS':
-      return state.map(t => t.id === action.id ? { ...t, isLeaving: true } : t)
-    case 'REMOVE_TOAST':
-      return state.filter(t => t.id !== action.id)
-    default:
-      return state
-  }
-}
+const DURATION_MS = { achievement: 6000, success: 3500, info: 5000, error: 7000 }
+const WITH_ACTION_MS = 7000
+const MAX_VISIBLE = 4
 
 export function ToastProvider({ children }) {
-  const [toasts, dispatch] = useReducer(toastReducer, [])
-  // Keep a ref to auto-dismiss timers so we can cancel on manual dismiss
+  const [toasts, setToasts] = useState([])
   const timers = useRef(new Map())
 
-  const dismissToast = useCallback((id) => {
-    // Cancel any pending timers
-    if (timers.current.has(id)) {
-      clearTimeout(timers.current.get(id))
-      timers.current.delete(id)
-    }
-    dispatch({ type: 'START_DISMISS', id })
-    setTimeout(() => dispatch({ type: 'REMOVE_TOAST', id }), TOAST_DISMISS_ANIM_MS)
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+
+  const dismiss = useCallback((id) => {
+    clearTimeout(timers.current.get(id))
+    timers.current.delete(id)
+    setToasts(list => list.map(t => (t.id === id ? { ...t, leaving: true } : t)))
+    setTimeout(() => setToasts(list => list.filter(t => t.id !== id)), TOAST_DISMISS_ANIM_MS)
   }, [])
 
-  const addToast = useCallback((achievement) => {
+  const push = useCallback((toast) => {
     const id = generateId('toast')
-    dispatch({ type: 'ADD_TOAST', id, achievement })
-    const timer = setTimeout(() => dismissToast(id), TOAST_DURATION_MS)
-    timers.current.set(id, timer)
-  }, [dismissToast])
+    setToasts(list => [...list.slice(-(MAX_VISIBLE - 1)), { ...toast, id, leaving: false }])
+    const duration = toast.duration ?? (toast.action ? WITH_ACTION_MS : DURATION_MS[toast.kind])
+    timers.current.set(id, setTimeout(() => dismiss(id), duration))
+    return id
+  }, [dismiss])
 
-  const addToasts = useCallback((achievements) => {
-    achievements.forEach((achievement, i) => {
-      setTimeout(() => addToast(achievement), i * TOAST_STAGGER_MS)
-    })
-  }, [addToast])
-
-  const showError = useCallback((message) => {
-    const id = crypto.randomUUID()
-    dispatch({ type: 'ADD_ERROR_TOAST', toast: { id, tier: 'error', title: '오류', body: message } })
-    timers.current.set(id, setTimeout(() => dismissToast(id), TOAST_DURATION_MS))
-  }, [dismissToast])
+  const api = useMemo(() => ({
+    success: (message, options) => push({ kind: 'success', message, ...options }),
+    info: (message, options) => push({ kind: 'info', message, ...options }),
+    error: (message, options) => push({ kind: 'error', message, ...options }),
+    /** Celebrate newly earned achievements, one after another. */
+    achievements: (list) => list.forEach((achievement, i) => {
+      setTimeout(() => push({ kind: 'achievement', achievement }), i * TOAST_STAGGER_MS)
+    }),
+    dismiss,
+  }), [push, dismiss])
 
   return (
-    <ToastContext.Provider value={{ toasts, addToast, addToasts, dismissToast, showError }}>
-      {children}
-    </ToastContext.Provider>
+    <ToastApiContext.Provider value={api}>
+      <ToastStateContext.Provider value={toasts}>{children}</ToastStateContext.Provider>
+    </ToastApiContext.Provider>
   )
 }
 
+/** toast.success('저장했어요'), toast.error(…), toast.achievements([...]) */
 export function useToast() {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast must be used within a ToastProvider')
-  return ctx
+  const api = useContext(ToastApiContext)
+  if (!api) throw new Error('useToast must be used within a ToastProvider')
+  return api
+}
+
+export function useToastList() {
+  const toasts = useContext(ToastStateContext)
+  if (!toasts) throw new Error('useToastList must be used within a ToastProvider')
+  return toasts
 }

@@ -1,342 +1,312 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { useApp } from '@/context/AppContext.jsx'
-import Sidebar from '@/components/Sidebar.jsx'
-import SummaryStatCard from '@/components/SummaryStatCard.jsx'
-import RecordEditor from '@/components/RecordEditor.jsx'
-import RecordCard from '@/components/RecordCard.jsx'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import CategoryNav from '@/components/CategoryNav.jsx'
 import AchievementCard from '@/components/AchievementCard.jsx'
-import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
+import RecordCard from '@/components/RecordCard.jsx'
+import RecordFab from '@/components/RecordFab.jsx'
+import EmptyState from '@/components/EmptyState.jsx'
+import Modal from '@/components/Modal.jsx'
 import ProgressBar from '@/components/ProgressBar.jsx'
+import { useApp } from '@/context/AppContext.jsx'
+import { useUI } from '@/context/UIContext.jsx'
+import { getCategoryPath, getDirectChildren, getSubtreeIds } from '@/utils/categoryTree.js'
+import { currentStreak, uniqueSortedDates } from '@/utils/dates.js'
+import { relativeDay, formatNumber } from '@/utils/formatters.js'
+import { progressRatio } from '@/utils/achievementText.js'
+import { getTier } from '@/constants/tiers.js'
 import {
-  ClipboardIcon, TrophyIcon, FlameIcon, CalendarIcon, MenuIcon, XIcon,
+  ChevronDownIcon, ChevronRightIcon, FlameIcon, FolderIcon, LogoMark, MedalIcon, NotebookIcon, PlusIcon,
 } from '@/components/Icons.jsx'
-import { getCategoryPath, getDirectChildren, getDescendantIds } from '@/utils/categoryTree.js'
-import { formatDate, conditionSummaryText } from '@/utils/formatters.js'
 
-function computeStreak(records, categoryId) {
-  const dateset = new Set(
-    records.filter(r => r.categoryId === categoryId).map(r => r.date)
-  )
-  const today = new Date()
-  let count = 0
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-    const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    if (dateset.has(s)) count++
-    else break
-  }
-  return count
+const PREVIEW_COUNT = 3
+
+function byNewest(a, b) {
+  return a.date === b.date ? 0 : a.date < b.date ? 1 : -1
 }
 
-function ChildCategoryGroup({ category, achievements, records }) {
+function AchievementGroup({ title, items, empty }) {
   const [expanded, setExpanded] = useState(false)
-  const catAchievements = achievements.filter(a => a.categoryId === category.id)
-  const earned = catAchievements.filter(a => a.isEarned).length
-  const total = catAchievements.length
-
-  if (total === 0) return null
-
+  if (items.length === 0) {
+    return empty ? <p className="text-sm text-ink-3 py-2">{empty}</p> : null
+  }
+  const shown = expanded ? items : items.slice(0, PREVIEW_COUNT)
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className={`text-slate-400 transition-transform ${expanded ? '' : '-rotate-90'}`}>▾</span>
-          <span className="font-medium text-type-card text-slate-700">{category.name}</span>
-        </div>
-        <span className="text-xs text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full font-medium">
-          {earned} / {total} 획득
-        </span>
-      </button>
-
-      {expanded && (
-        <div className="p-3 grid grid-cols-2 gap-2 bg-white">
-          {catAchievements.map(a => (
-            <AchievementCard key={a.id} achievement={a} />
-          ))}
-        </div>
+    <div>
+      <h3 className="text-sm font-semibold text-ink-2 mb-2">
+        {title} <span className="font-normal text-ink-3">{items.length}</span>
+      </h3>
+      <div className="space-y-2">
+        {shown.map(a => <AchievementCard key={a.id} achievement={a} />)}
+      </div>
+      {items.length > PREVIEW_COUNT && (
+        <button type="button" onClick={() => setExpanded(v => !v)} className="mt-2 w-full btn btn-sm btn-ghost">
+          {expanded ? '접기' : `${items.length - PREVIEW_COUNT}개 더 보기`}
+        </button>
       )}
     </div>
   )
 }
 
+function Stat({ label, value, icon = null }) {
+  return (
+    <div className="bg-surface px-4 py-3.5 min-w-0">
+      <dt className="text-sm text-ink-2">{label}</dt>
+      <dd className="mt-0.5 flex items-center gap-1.5 text-xl font-bold text-ink tabular truncate">
+        {icon}
+        {value}
+      </dd>
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const { categories, records, achievements, deleteRecord } = useApp()
-  const [selectedCategoryId, setSelectedCategoryId] = useState(
-    categories.find(c => c.parentId === null)?.id || null
-  )
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [editingRecord, setEditingRecord] = useState(null)
-  const [quickLogOpen, setQuickLogOpen] = useState(false)
+  const { categories, records, achievements, prefs, setPrefs } = useApp()
+  const { openRecordEditor } = useUI()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [sheetOpen, setSheetOpen] = useState(false)
 
-  const selectedCategory = categories.find(c => c.id === selectedCategoryId)
-  const breadcrumbPath = selectedCategoryId
-    ? getCategoryPath(selectedCategoryId, categories)
-    : []
+  const exists = (id) => !!id && categories.some(c => c.id === id)
+  const firstRootId = categories.find(c => c.parentId === null)?.id ?? null
+  const [chosenId, setChosenId] = useState(() => {
+    const requested = location.state?.categoryId
+    if (exists(requested)) return requested
+    return exists(prefs.homeCategoryId) ? prefs.homeCategoryId : firstRootId
+  })
+  const selectedId = exists(chosenId) ? chosenId : firstRootId
+  const selected = categories.find(c => c.id === selectedId) ?? null
 
-  // Direct records in this category
-  const categoryRecords = useMemo(
-    () => records.filter(r => r.categoryId === selectedCategoryId),
-    [records, selectedCategoryId]
-  )
+  const select = (id) => {
+    setChosenId(id)
+    setPrefs({ homeCategoryId: id })
+    setSheetOpen(false)
+  }
 
-  // Achievements directly linked to this node
-  const categoryAchievements = useMemo(
-    () => achievements.filter(a => a.categoryId === selectedCategoryId),
-    [achievements, selectedCategoryId]
-  )
-
-  const earnedAchievements = categoryAchievements.filter(a => a.isEarned)
-  const inProgressAchievements = categoryAchievements.filter(a => !a.isEarned)
-
-  // Stats
-  const streak = selectedCategoryId ? computeStreak(records, selectedCategoryId) : 0
-  const latestRecord = categoryRecords.length > 0
-    ? [...categoryRecords].sort((a, b) => b.date.localeCompare(a.date))[0]
-    : null
-  const recentRecords = [...categoryRecords]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5)
-
-  // Direct children
-  const directChildren = getDirectChildren(selectedCategoryId, categories)
-
-  // Close quick log and edit modal on Escape
+  // Links such as "카테고리별 진행" on the showcase pass the category in router state.
   useEffect(() => {
-    const handler = (e) => {
-      if (e.key === 'Escape') {
-        setQuickLogOpen(false)
-        setEditingRecord(null)
-      }
+    const requested = location.state?.categoryId
+    if (!requested) return
+    if (exists(requested)) select(requested)
+    navigate('.', { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key])
+
+  const scope = useMemo(() => (selectedId ? getSubtreeIds(selectedId, categories) : new Set()), [selectedId, categories])
+  const scopedRecords = useMemo(() => records.filter(r => scope.has(r.categoryId)).sort(byNewest), [records, scope])
+  const scopedAchievements = useMemo(() => achievements.filter(a => scope.has(a.categoryId)), [achievements, scope])
+
+  const inProgress = useMemo(() => scopedAchievements
+    .filter(a => !a.isEarned)
+    .sort((a, b) => {
+      const secret = Number(a.isHidden) - Number(b.isHidden)
+      if (secret !== 0) return secret
+      return progressRatio(b) - progressRatio(a) || getTier(a.tier).rank - getTier(b.tier).rank
+    }), [scopedAchievements])
+  const earned = useMemo(() => scopedAchievements
+    .filter(a => a.isEarned)
+    .sort((a, b) => (a.earnedAt < b.earnedAt ? 1 : -1)), [scopedAchievements])
+
+  const streak = useMemo(() => currentStreak(uniqueSortedDates(scopedRecords)), [scopedRecords])
+  const children = useMemo(() => (selectedId ? getDirectChildren(selectedId, categories) : []), [selectedId, categories])
+  const ancestors = selectedId ? getCategoryPath(selectedId, categories).slice(0, -1) : []
+
+  const childStats = useMemo(() => children.map(child => {
+    const ids = getSubtreeIds(child.id, categories)
+    const childAchievements = achievements.filter(a => ids.has(a.categoryId))
+    return {
+      child,
+      recordCount: records.filter(r => ids.has(r.categoryId)).length,
+      earned: childAchievements.filter(a => a.isEarned).length,
+      total: childAchievements.length,
     }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [])
+  }), [children, categories, achievements, records])
 
-  // Close quick log when category changes
-  useEffect(() => {
-    setQuickLogOpen(false)
-  }, [selectedCategoryId])
+  const showIntro = records.length === 0 && !prefs.introDismissed
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-20 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="flex-1 flex">
+      <aside className="hidden md:block w-72 flex-shrink-0 border-r border-line bg-surface/50">
+        <div className="sticky top-14 h-[calc(100dvh-3.5rem)]">
+          <CategoryNav selectedId={selectedId} onSelect={select} />
+        </div>
+      </aside>
 
-      {/* Sidebar */}
-      <div
-        className={[
-          'flex-shrink-0 h-full overflow-hidden z-30 transition-transform duration-300',
-          'fixed md:static top-0 left-0 bottom-0',
-          'w-56',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-        ].join(' ')}
-      >
-        <Sidebar
-          selectedCategoryId={selectedCategoryId}
-          onSelectCategory={(id) => { setSelectedCategoryId(id); setSidebarOpen(false) }}
-        />
-      </div>
-
-      {/* Main panel */}
-      <div className="flex-1 min-w-0 h-full overflow-y-auto bg-neutral-50 scrollbar-thin">
-        <div className="px-6 py-6 space-y-6">
-          {/* Mobile sidebar toggle */}
-          <button
-            className="md:hidden flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 -mt-2 -ml-1 mb-0 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors self-start"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <MenuIcon size={18} />
-            <span>카테고리</span>
-          </button>
-
-          {/* Header */}
-          {selectedCategory ? (
-            <>
-              <div className="flex items-start justify-between gap-4">
-                {/* Breadcrumb + title */}
-                <div>
-                  <nav className="flex items-center gap-1 text-type-secondary text-slate-400 mb-1 flex-wrap">
-                    {breadcrumbPath.map((segment, i) => (
-                      <React.Fragment key={segment.id}>
-                        {i > 0 && <span className="select-none">›</span>}
-                        <button
-                          onClick={() => setSelectedCategoryId(segment.id)}
-                          className={[
-                            'transition-colors',
-                            i === breadcrumbPath.length - 1
-                              ? 'text-slate-600 font-medium cursor-default'
-                              : 'hover:text-slate-600 hover:underline',
-                          ].join(' ')}
-                        >
-                          {segment.name}
-                        </button>
-                      </React.Fragment>
-                    ))}
-                  </nav>
-                  <h1 className="text-type-page font-medium text-slate-900">{selectedCategory.name}</h1>
-                </div>
-
-                {/* Quick Log button */}
-                <button
-                  onClick={() => setQuickLogOpen(true)}
-                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark active:scale-95 transition-all shadow-sm mt-1"
-                >
-                  <span className="text-base leading-none">+</span>
-                  <span>기록추가</span>
+      <div className="flex-1 min-w-0">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 pt-4 md:pt-8 pb-28 md:pb-12">
+          {!selected ? (
+            <EmptyState
+              icon={<FolderIcon size={22} />}
+              title="카테고리가 없어요"
+              body="달리기, 독서처럼 기록할 분야를 카테고리로 만들어 보세요."
+              action={
+                <button type="button" className="md:hidden btn btn-sm btn-primary" onClick={() => setSheetOpen(true)}>
+                  카테고리 만들기
                 </button>
-              </div>
+              }
+            />
+          ) : (
+            <>
+              <header className="flex items-end justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  {ancestors.length > 0 && (
+                    <nav className="hidden md:flex items-center gap-1 text-sm text-ink-3 mb-1" aria-label="상위 카테고리">
+                      {ancestors.map(c => (
+                        <React.Fragment key={c.id}>
+                          <button type="button" onClick={() => select(c.id)} className="hover:text-ink hover:underline underline-offset-2">
+                            {c.name}
+                          </button>
+                          <ChevronRightIcon size={14} />
+                        </React.Fragment>
+                      ))}
+                    </nav>
+                  )}
+                  {ancestors.length > 0 && (
+                    <p className="md:hidden text-sm text-ink-3 mb-0.5 truncate">{ancestors.map(c => c.name).join(' › ')}</p>
+                  )}
+                  <h1 className="hidden md:block text-2xl font-bold text-ink truncate">{selected.name}</h1>
+                  <button
+                    type="button"
+                    onClick={() => setSheetOpen(true)}
+                    className="md:hidden -ml-1 px-1 inline-flex items-center gap-1.5 rounded-lg text-2xl font-bold text-ink max-w-full"
+                    aria-label={`${selected.name}, 카테고리 바꾸기`}
+                  >
+                    <span className="truncate">{selected.name}</span>
+                    <ChevronDownIcon size={22} className="flex-shrink-0 text-ink-3" />
+                  </button>
+                </div>
+                <button type="button" className="hidden md:inline-flex btn btn-primary" onClick={() => openRecordEditor({ categoryId: selected.id })}>
+                  <PlusIcon size={18} strokeWidth={2.2} /> 기록하기
+                </button>
+              </header>
 
-              {/* Summary stat cards — full width 4-column row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <SummaryStatCard
-                  label="기록"
-                  value={categoryRecords.length}
-                  icon={<ClipboardIcon size={16} />}
-                  accent="#0066FF"
-                />
-                <SummaryStatCard
-                  label="업적"
-                  value={`${earnedAchievements.length} / ${categoryAchievements.length}`}
-                  icon={<TrophyIcon size={16} />}
-                  accent="#f59e0b"
-                />
-                <SummaryStatCard
-                  label="현재 연속"
-                  value={`${streak}d`}
-                  icon={<FlameIcon size={16} />}
-                  accent={streak >= 7 ? '#CC4204' : '#5B75BA'}
-                />
-                <SummaryStatCard
-                  label="최근 기록"
-                  value={latestRecord ? formatDate(latestRecord.date) : '—'}
-                  icon={<CalendarIcon size={16} />}
-                />
-              </div>
+              {showIntro && (
+                <div className="mt-5 card border-accent/25 bg-accent-soft/50 p-5 flex gap-4">
+                  <LogoMark size={40} className="flex-shrink-0 hidden sm:block" />
+                  <div className="min-w-0">
+                    <p className="text-md font-semibold text-ink">기록하면 업적이 저절로 쌓여요</p>
+                    <p className="mt-1 text-sm text-ink-2">
+                      달리기, 독서, 저축처럼 꾸준히 하고 싶은 일을 기록해 보세요. 조건을 채운 업적은 바로 달성되고 진열장에 모여요.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" className="btn btn-sm btn-primary" onClick={() => openRecordEditor({ categoryId: selected.id })}>
+                        첫 기록 남기기
+                      </button>
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPrefs({ introDismissed: true })}>
+                        닫기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              {/* Two-column content area */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
-                {/* Left column — Recent records */}
-                <section>
-                  <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
-                    최근 기록
-                  </h2>
-                  {recentRecords.length > 0 ? (
+              <dl className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line rounded-2xl overflow-hidden">
+                <Stat label="기록" value={`${formatNumber(scopedRecords.length)}개`} />
+                <Stat label="달성한 업적" value={`${earned.length} / ${scopedAchievements.length}`} />
+                <Stat
+                  label="연속 기록"
+                  value={`${streak}일`}
+                  icon={streak > 0 ? <FlameIcon size={18} className="text-warn" /> : null}
+                />
+                <Stat label="마지막 기록" value={scopedRecords[0] ? relativeDay(scopedRecords[0].date) : '없음'} />
+              </dl>
+
+              <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-6 items-start">
+                <section aria-labelledby="home-records">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 id="home-records" className="section-title">최근 기록</h2>
+                    {scopedRecords.length > 0 && (
+                      <Link to="/records" state={{ categoryId: selected.id }} className="text-sm font-medium text-accent-ink hover:underline underline-offset-2">
+                        모두 보기
+                      </Link>
+                    )}
+                  </div>
+                  {scopedRecords.length > 0 ? (
                     <div className="space-y-2">
-                      {recentRecords.map(r => (
-                        <RecordCard key={r.id} record={r} showDate onEdit={setEditingRecord} />
+                      {scopedRecords.slice(0, 5).map(r => (
+                        <RecordCard key={r.id} record={r} showDate relativeTo={selected.id} />
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-400 py-6 text-center bg-white border border-slate-100 rounded-xl">
-                      아직 기록이 없습니다. 기록추가로 첫 기록을 추가해보세요!
-                    </p>
+                    <div className="card">
+                      <EmptyState
+                        icon={<NotebookIcon size={22} />}
+                        title="아직 기록이 없어요"
+                        body={`${selected.name}에서 한 일을 가볍게 남겨 보세요.`}
+                        action={
+                          <button type="button" className="btn btn-sm btn-primary" onClick={() => openRecordEditor({ categoryId: selected.id })}>
+                            기록하기
+                          </button>
+                        }
+                      />
+                    </div>
                   )}
                 </section>
 
-                {/* Right column — Achievements */}
-                <div className="space-y-6">
-                  {earnedAchievements.length > 0 && (
-                    <section>
-                      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
-                        획득 ({earnedAchievements.length})
-                      </h2>
-                      <div className="grid grid-cols-1 gap-3">
-                        {earnedAchievements.map(a => (
-                          <AchievementCard key={a.id} achievement={a} />
-                        ))}
-                      </div>
-                    </section>
+                <section aria-labelledby="home-achievements" className="space-y-5">
+                  <div className="flex items-center justify-between -mb-2">
+                    <h2 id="home-achievements" className="section-title">업적</h2>
+                    <Link to="/achievements" state={{ categoryId: selected.id }} className="text-sm font-medium text-accent-ink hover:underline underline-offset-2">
+                      관리
+                    </Link>
+                  </div>
+                  {scopedAchievements.length === 0 ? (
+                    <div className="card">
+                      <EmptyState
+                        icon={<MedalIcon size={22} />}
+                        title="아직 업적이 없어요"
+                        body="이 카테고리에서 이루고 싶은 목표를 업적으로 만들어 보세요."
+                        action={
+                          <Link to="/achievements" state={{ create: true, categoryId: selected.id }} className="btn btn-sm btn-secondary">
+                            업적 만들기
+                          </Link>
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <AchievementGroup title="다음 목표" items={inProgress} empty="이 카테고리의 업적을 모두 달성했어요." />
+                      <AchievementGroup title="달성한 업적" items={earned} />
+                    </>
                   )}
-
-                  {inProgressAchievements.length > 0 && (
-                    <section>
-                      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
-                        진행 중 / 잠김 ({inProgressAchievements.length})
-                      </h2>
-                      <div className="grid grid-cols-1 gap-3">
-                        {inProgressAchievements.map(a => (
-                          <AchievementCard key={a.id} achievement={a} />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {earnedAchievements.length === 0 && inProgressAchievements.length === 0 && (
-                    <p className="text-xs text-slate-400 py-4 text-center">
-                      이 카테고리에는 아직 업적이 없습니다
-                    </p>
-                  )}
-                </div>
+                </section>
               </div>
 
-              {/* Child category groups — full width below grid */}
-              {directChildren.length > 0 && (
-                <section>
-                  <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-3">
-                    하위 카테고리
-                  </h2>
-                  <div className="space-y-3">
-                    {directChildren.map(child => (
-                      <ChildCategoryGroup
+              {childStats.length > 0 && (
+                <section className="mt-10" aria-labelledby="home-children">
+                  <h2 id="home-children" className="section-title mb-3">하위 카테고리</h2>
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                    {childStats.map(({ child, recordCount, earned: e, total }) => (
+                      <button
                         key={child.id}
-                        category={child}
-                        achievements={achievements}
-                        records={records}
-                      />
+                        type="button"
+                        onClick={() => select(child.id)}
+                        className="card px-4 py-3.5 text-left transition-colors hover:border-line-strong hover:bg-sunken/40"
+                      >
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-base font-semibold text-ink truncate">{child.name}</span>
+                          <ChevronRightIcon size={16} className="text-ink-3 flex-shrink-0" />
+                        </span>
+                        <span className="block mt-0.5 text-sm text-ink-2">
+                          기록 {formatNumber(recordCount)}개 · 업적 {e}/{total}
+                        </span>
+                        {total > 0 && <ProgressBar value={e / total} height={4} className="mt-2.5" />}
+                      </button>
                     ))}
                   </div>
                 </section>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <p className="text-lg font-medium">시작할 카테고리를 선택하세요</p>
-              <p className="text-sm mt-1">또는 사이드바에서 새로 만드세요</p>
-            </div>
           )}
         </div>
       </div>
 
-      {/* 기록추가 modal */}
-      {quickLogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setQuickLogOpen(false) }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <RecordEditor
-              selectedCategoryId={selectedCategoryId}
-              onClose={() => setQuickLogOpen(false)}
-            />
-          </div>
-        </div>
-      )}
+      <RecordFab categoryId={selected?.id ?? null} />
 
-      {/* Edit record modal */}
-      {editingRecord && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null) }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <RecordEditor
-              selectedCategoryId={editingRecord.categoryId}
-              initialRecord={editingRecord}
-              onClose={() => setEditingRecord(null)}
-              onDelete={async (id) => { await deleteRecord(id); setEditingRecord(null) }}
-            />
-          </div>
+      <Modal open={sheetOpen} title="카테고리" onClose={() => setSheetOpen(false)} bodyClassName="p-0">
+        <div className="h-[65dvh]">
+          <CategoryNav selectedId={selectedId} onSelect={select} showTitle={false} />
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

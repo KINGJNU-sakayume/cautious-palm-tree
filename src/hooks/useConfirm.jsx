@@ -1,36 +1,38 @@
-import { useState, useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 
+/**
+ * const { confirm, confirmDialog } = useConfirm()
+ * if (await confirm('기록을 삭제할까요?', '되돌릴 수 없어요.', { confirmLabel: '삭제' })) …
+ * Render {confirmDialog} somewhere in the component.
+ */
 export function useConfirm() {
-  const [dialogState, setDialogState] = useState({ open: false, title: '', body: '' })
-  const resolveRef = useRef(null)
+  const [dialog, setDialog] = useState(null)
+  const resolverRef = useRef(null)
 
-  const confirm = (title, body) => {
-    setDialogState({ open: true, title, body })
-    return new Promise((resolve) => {
-      resolveRef.current = resolve
-    })
+  const confirm = useCallback((title, body, options = {}) => new Promise(resolve => {
+    resolverRef.current?.(false)
+    resolverRef.current = resolve
+    setDialog({ title, body, ...options })
+  }), [])
+
+  const close = (result) => {
+    setDialog(null)
+    resolverRef.current?.(result)
+    resolverRef.current = null
   }
 
-  const handleConfirm = () => {
-    setDialogState(s => ({ ...s, open: false }))
-    resolveRef.current?.(true)
-  }
-
-  const handleCancel = () => {
-    setDialogState(s => ({ ...s, open: false }))
-    resolveRef.current?.(false)
-  }
-
-  const confirmDialog = (
+  const confirmDialog = dialog ? (
     <ConfirmDialog
-      open={dialogState.open}
-      title={dialogState.title}
-      body={dialogState.body}
-      onConfirm={handleConfirm}
-      onCancel={handleCancel}
+      open
+      title={dialog.title}
+      body={dialog.body}
+      confirmLabel={dialog.confirmLabel}
+      tone={dialog.tone}
+      onConfirm={() => close(true)}
+      onCancel={() => close(false)}
     />
-  )
+  ) : null
 
-  return { confirmDialog, confirm }
+  return { confirm, confirmDialog }
 }

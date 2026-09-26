@@ -1,224 +1,121 @@
 import React from 'react'
 
-// All icons are 14×14 by default, stroke-based, using currentColor.
-// Usage: <TrophyIcon size={16} className="text-amber-500" />
+// Stroke icons drawn on a 24×24 grid, coloured with currentColor.
+// Usage: <HomeIcon size={20} className="text-ink-2" />
 
-function Icon({ size = 14, className = '', children, viewBox = '0 0 24 24' }) {
+function Icon({ size = 18, className = '', strokeWidth = 1.8, children }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox={viewBox}
+      viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
+      focusable="false"
     >
       {children}
     </svg>
   )
 }
 
-export function ClipboardIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-      <line x1="9" y1="12" x2="15" y2="12" />
-      <line x1="9" y1="16" x2="13" y2="16" />
-    </Icon>
-  )
+const make = (paths) => function IconComponent(props) {
+  return <Icon {...props}>{paths}</Icon>
 }
 
-export function TrophyIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2z" />
-    </Icon>
-  )
-}
+export const HomeIcon = make(<>
+  <path d="M3 10.5 12 3l9 7.5" />
+  <path d="M5.5 9v11a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9" />
+</>)
 
-export function FlameIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-    </Icon>
-  )
-}
+export const NotebookIcon = make(<>
+  <rect x="4.5" y="3" width="15" height="18" rx="2" />
+  <path d="M8.5 8h7M8.5 12h7M8.5 16h4" />
+</>)
 
-export function CalendarIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </Icon>
-  )
-}
+export const MedalIcon = make(<>
+  <path d="M7 3h10l-3.4 7.2" />
+  <path d="M7 3l3.4 7.2" />
+  <circle cx="12" cy="15.5" r="5.5" />
+  <path d="m12 13 .9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" strokeWidth="1.2" />
+</>)
 
-export function SearchIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </Icon>
-  )
-}
+export const TrophyIcon = make(<>
+  <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+  <path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3.5M17 6h2.5a2.5 2.5 0 0 1-2.6 3.5" />
+  <path d="M12 14v4M8.5 21h7M9.5 18h5v3h-5z" />
+</>)
 
-export function StarIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </Icon>
-  )
-}
+export const SettingsIcon = make(<>
+  <circle cx="12" cy="12" r="3" />
+  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+</>)
 
-export function StarFilledIcon({ size, className }) {
+export const PlusIcon = make(<path d="M12 5v14M5 12h14" />)
+export const XIcon = make(<path d="M18 6 6 18M6 6l12 12" />)
+export const CheckIcon = make(<path d="m5 12.5 4.5 4.5L19 7.5" />)
+export const ChevronDownIcon = make(<path d="m6 9 6 6 6-6" />)
+export const ChevronRightIcon = make(<path d="m9 6 6 6-6 6" />)
+export const ChevronLeftIcon = make(<path d="m15 6-6 6 6 6" />)
+export const ArrowLeftIcon = make(<path d="M19 12H5M11 18l-6-6 6-6" />)
+export const MenuIcon = make(<path d="M4 6h16M4 12h16M4 18h16" />)
+export const SearchIcon = make(<><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>)
+export const PencilIcon = make(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></>)
+export const TrashIcon = make(<>
+  <path d="M3 6h18" />
+  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6" />
+</>)
+export const DotsIcon = make(<>
+  <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" />
+  <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+  <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" />
+</>)
+export const FolderIcon = make(<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />)
+export const LockIcon = make(<><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7.5a4 4 0 0 1 8 0V11" /></>)
+export const ImageIcon = make(<>
+  <rect x="3" y="3" width="18" height="18" rx="2.5" />
+  <circle cx="9" cy="9" r="1.8" />
+  <path d="m21 15-4.5-4.5L6 21" />
+</>)
+export const DownloadIcon = make(<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />)
+export const UploadIcon = make(<path d="M12 20V9M7 13.5l5-5 5 5M5 4h14" />)
+export const FlameIcon = make(<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />)
+export const CalendarIcon = make(<><rect x="3.5" y="4.5" width="17" height="16" rx="2" /><path d="M16 2.5v4M8 2.5v4M3.5 10h17" /></>)
+export const EyeOffIcon = make(<>
+  <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a17.5 17.5 0 0 1-2.16 3.19" />
+  <path d="M6.61 6.61A17.4 17.4 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" />
+  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24M2 2l20 20" />
+</>)
+export const InfoIcon = make(<><circle cx="12" cy="12" r="9.5" /><path d="M12 16.5v-5M12 8h.01" /></>)
+export const AlertIcon = make(<><circle cx="12" cy="12" r="9.5" /><path d="M12 7.5v5.5M12 16.5h.01" /></>)
+export const TagIcon = make(<>
+  <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+  <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
+</>)
+export const PinIcon = make(<><path d="M12 16.5V22" /><path d="M8.5 3h7l-1 5.5 3 3.5v2h-11v-2l3-3.5z" /></>)
+export const StarIcon = make(<path d="m12 2.8 2.84 5.76 6.36.92-4.6 4.49 1.08 6.33L12 17.3l-5.68 3 1.08-6.33-4.6-4.49 6.36-.92z" />)
+
+export function StarFilledIcon({ size = 18, className = '' }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size ?? 14}
-      height={size ?? 14}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="m12 2.8 2.84 5.76 6.36.92-4.6 4.49 1.08 6.33L12 17.3l-5.68 3 1.08-6.33-4.6-4.49 6.36-.92z" />
     </svg>
   )
 }
 
-export function ChevronDownIcon({ size, className }) {
+/** App mark: a bookmark ribbon with a star — an achievement kept in a library. */
+export function LogoMark({ size = 28, className = '' }) {
   return (
-    <Icon size={size} className={className}>
-      <polyline points="6 9 12 15 18 9" />
-    </Icon>
-  )
-}
-
-export function ChevronRightIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <polyline points="9 18 15 12 9 6" />
-    </Icon>
-  )
-}
-
-export function PencilIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </Icon>
-  )
-}
-
-export function PlusIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </Icon>
-  )
-}
-
-export function FolderIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    </Icon>
-  )
-}
-
-export function FolderOpenIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      <polyline points="9 14 12 11 15 14" />
-    </Icon>
-  )
-}
-
-export function TrashIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-    </Icon>
-  )
-}
-
-export function DotsIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-      <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
-      <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
-    </Icon>
-  )
-}
-
-export function XIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </Icon>
-  )
-}
-
-export function MenuIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="18" x2="21" y2="18" />
-    </Icon>
-  )
-}
-
-export function SettingsIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </Icon>
-  )
-}
-
-export function CheckIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <polyline points="20 6 9 17 4 12" />
-    </Icon>
-  )
-}
-
-export function LayoutIcon({ size, className }) {
-  return (
-    <Icon size={size} className={className}>
-      <rect x="3" y="3" width="7" height="7" />
-      <rect x="14" y="3" width="7" height="7" />
-      <rect x="3" y="14" width="7" height="7" />
-      <rect x="14" y="14" width="7" height="7" />
-    </Icon>
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 32 32" className={className} aria-hidden="true" focusable="false">
+      <rect width="32" height="32" rx="9" fill="rgb(var(--c-accent))" />
+      <path d="M10 7h12v18l-6-3.8L10 25z" fill="rgb(var(--c-on-accent))" />
+      <path d="m16 10.2 1.3 2.6 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z" fill="rgb(var(--c-accent))" />
+    </svg>
   )
 }

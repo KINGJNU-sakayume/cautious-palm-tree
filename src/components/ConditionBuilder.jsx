@@ -1,449 +1,419 @@
-import React, { useState } from 'react'
-import CategoryTreeSelector from './CategoryTreeSelector.jsx'
+import React, { useEffect, useMemo, useState } from 'react'
+import CategoryPicker from './CategoryPicker.jsx'
+import Medal from './Medal.jsx'
+import TagInput from './TagInput.jsx'
 import { useApp } from '@/context/AppContext.jsx'
+import { COMPOSABLE_CONDITION_TYPES, isMetaCondition } from '@/utils/achievementEvaluator.js'
+import { getCategoryPathLabel } from '@/utils/categoryTree.js'
+import { CheckIcon, PlusIcon, SearchIcon, XIcon } from './Icons.jsx'
 
-const CONDITION_TYPES = [
-  { value: 'action', label: '행동 (기록 1회)' },
-  { value: 'count', label: '횟수' },
-  { value: 'cumulative', label: '누적' },
-  { value: 'daily_cumulative', label: '일별 누적' },
-  { value: 'single', label: '단일 값' },
-  { value: 'streak', label: '연속' },
-  { value: 'tag_match', label: '태그 일치' },
-  { value: 'tag_count', label: '태그 횟수' },
-  { value: 'tag_set_complete', label: '태그 세트 완성' },
-  { value: 'cross_category_cumulative', label: '교차 카테고리 누적' },
+const RECORD_TYPES = [
+  { value: 'action', label: '첫 기록 남기기' },
+  { value: 'count', label: '기록 횟수 채우기' },
+  { value: 'cumulative', label: '값을 모두 더해 목표 채우기' },
+  { value: 'single', label: '한 번에 목표 넘기기' },
+  { value: 'daily_cumulative', label: '하루 합계로 목표 넘기기' },
+  { value: 'streak', label: '며칠 연속 기록하기' },
+  { value: 'tag_match', label: '특정 태그로 기록하기' },
+  { value: 'tag_count', label: '특정 태그로 여러 번 기록하기' },
+  { value: 'tag_set_complete', label: '태그 목록 모두 모으기' },
+  { value: 'cross_category_cumulative', label: '여러 카테고리 합산하기' },
+  { value: 'composite', label: '여러 조건 함께 채우기' },
 ]
-
 const META_TYPES = [
-  { value: 'meta_count', label: '카테고리 내 업적 수' },
-  { value: 'meta_list', label: '특정 업적 목록' },
-  { value: 'meta_clear', label: '카테고리 전체 달성' },
+  { value: 'meta_count', label: '업적 개수 채우기' },
+  { value: 'meta_list', label: '고른 업적 모두 달성하기' },
+  { value: 'meta_clear', label: '카테고리 업적 모두 달성하기' },
+]
+const OTHER_TYPES = [{ value: 'manual', label: '직접 체크하기' }]
+
+const LABEL_BY_TYPE = Object.fromEntries([...RECORD_TYPES, ...META_TYPES, ...OTHER_TYPES].map(t => [t.value, t.label]))
+
+const AGGREGATIONS = [
+  { value: 'max', label: '최고 기록' },
+  { value: 'sum', label: '모두 더한 값' },
+  { value: 'last', label: '가장 최근 기록' },
 ]
 
-const AGGREGATION_OPTIONS = [
-  { value: 'max', label: '최댓값 (개인 최고)' },
-  { value: 'last', label: '최근값' },
-  { value: 'sum', label: '합계' },
-]
+const UNIT_TYPES = ['cumulative', 'single', 'daily_cumulative', 'cross_category_cumulative']
 
-function CrossCategorySources({ condition, update }) {
-  const sources = condition.sources || []
-
-  const updateSource = (i, field, val) => {
-    const next = sources.map((s, idx) => idx === i ? { ...s, [field]: val } : s)
-    update('sources', next)
+/** A fresh condition of `type`, keeping the unit when it still makes sense. */
+export function defaultCondition(type, previous = null) {
+  const unit = UNIT_TYPES.includes(type) && previous?.unit ? previous.unit : ''
+  switch (type) {
+    case 'count': return { type, target: 10 }
+    case 'cumulative': return { type, target: 100, unit }
+    case 'single': return { type, target: 10, unit }
+    case 'daily_cumulative': return { type, target: 2, unit }
+    case 'streak': return { type, target: 7 }
+    case 'tag_match': return { type, tag: '' }
+    case 'tag_count': return { type, tag: '', target: 5 }
+    case 'tag_set_complete': return { type, tags: [] }
+    case 'cross_category_cumulative':
+      return { type, sources: [{ categoryId: null, aggregation: 'max' }, { categoryId: null, aggregation: 'max' }], target: 100, unit }
+    case 'composite':
+      return { type, operator: 'AND', conditions: [{ type: 'count', target: 10 }, { type: 'streak', target: 7 }] }
+    case 'meta_count': return { type, target: 5 }
+    case 'meta_list': return { type, achievementIds: [] }
+    default: return { type }
   }
+}
 
-  const addSource = () => {
-    update('sources', [...sources, { categoryId: null, aggregation: 'max' }])
-  }
+/** Text box for numbers that keeps what's typed ("1.") while passing numbers up. */
+function NumberField({ value, onChange, integer = false, className = 'w-28', ...rest }) {
+  const [text, setText] = useState(value === '' || value == null ? '' : String(value))
+  useEffect(() => {
+    if (Number(text) !== value && !(text === '' && value === '')) setText(value === '' || value == null ? '' : String(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  return (
+    <input
+      type="text"
+      inputMode={integer ? 'numeric' : 'decimal'}
+      value={text}
+      onChange={e => {
+        const raw = e.target.value.replace(/,/g, '')
+        setText(raw)
+        const n = Number(raw)
+        onChange(raw.trim() === '' || !Number.isFinite(n) ? raw : n)
+      }}
+      className={`input tabular ${className}`}
+      autoComplete="off"
+      {...rest}
+    />
+  )
+}
 
-  const removeSource = (i) => {
-    update('sources', sources.filter((_, idx) => idx !== i))
+function Row({ children }) {
+  return <div className="flex flex-wrap items-center gap-2 text-base text-ink">{children}</div>
+}
+
+function Hint({ children }) {
+  return <p className="field-hint">{children}</p>
+}
+
+// ── Record-based fields ──────────────────────────────────────────────────────
+
+function RecordConditionFields({ condition: c, onChange }) {
+  const set = (patch) => onChange({ ...c, ...patch })
+  const unitInput = (
+    <input
+      type="text"
+      value={c.unit ?? ''}
+      onChange={e => set({ unit: e.target.value })}
+      placeholder="단위"
+      aria-label="단위"
+      className="input w-24"
+      autoComplete="off"
+    />
+  )
+
+  switch (c.type) {
+    case 'action':
+      return <Hint>이 카테고리에 기록을 하나라도 남기면 달성해요.</Hint>
+
+    case 'count':
+      return (
+        <Row>
+          기록 <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="목표 횟수" /> 회
+        </Row>
+      )
+
+    case 'cumulative':
+      return (
+        <>
+          <Row>
+            모두 더해서 <NumberField value={c.target} onChange={target => set({ target })} aria-label="목표 값" /> {unitInput}
+          </Row>
+          <Hint>단위를 적으면 같은 단위의 기록만 더해요. m→km, 분→시간처럼 바꿀 수 있는 단위는 알아서 환산해요.</Hint>
+        </>
+      )
+
+    case 'single':
+      return (
+        <>
+          <Row>
+            한 번에 <NumberField value={c.target} onChange={target => set({ target })} aria-label="목표 값" /> {unitInput} 이상
+          </Row>
+          <Hint>기록 하나의 값이 목표를 넘으면 달성해요.</Hint>
+        </>
+      )
+
+    case 'daily_cumulative':
+      return (
+        <>
+          <Row>
+            하루에 <NumberField value={c.target} onChange={target => set({ target })} aria-label="목표 값" /> {unitInput} 이상
+          </Row>
+          <Hint>같은 날 남긴 기록의 값을 더해서 비교해요.</Hint>
+        </>
+      )
+
+    case 'streak':
+      return (
+        <>
+          <Row>
+            <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="연속 일수" /> 일 연속
+          </Row>
+          <Hint>지나간 날짜로 남긴 기록도 포함해서, 가장 길게 이어진 기간을 봐요.</Hint>
+        </>
+      )
+
+    case 'tag_match':
+      return (
+        <Row>
+          <input type="text" value={c.tag ?? ''} onChange={e => set({ tag: e.target.value })} placeholder="예: 야외" className="input w-40" aria-label="태그" />
+          태그를 붙인 기록 남기기
+        </Row>
+      )
+
+    case 'tag_count':
+      return (
+        <Row>
+          <input type="text" value={c.tag ?? ''} onChange={e => set({ tag: e.target.value })} placeholder="예: 야외" className="input w-36" aria-label="태그" />
+          태그를 붙인 기록
+          <NumberField integer value={c.target} onChange={target => set({ target })} className="w-20" aria-label="목표 횟수" /> 회
+        </Row>
+      )
+
+    case 'tag_set_complete':
+      return (
+        <>
+          <TagInput value={c.tags || []} onChange={tags => set({ tags })} placeholder="태그를 입력하고 Enter (쉼표로 여러 개 붙여넣기)" ariaLabel="모을 태그" />
+          <Hint>{(c.tags || []).length}개 태그가 모두 한 번 이상 기록되면 달성해요. 기록할 때 추천 태그로 보여 줘요.</Hint>
+        </>
+      )
+
+    case 'cross_category_cumulative':
+      return <CrossCategoryFields condition={c} onChange={onChange} unitInput={unitInput} />
+
+    default:
+      return null
   }
+}
+
+function CrossCategoryFields({ condition: c, onChange, unitInput }) {
+  const sources = c.sources || []
+  const setSource = (i, patch) => onChange({ ...c, sources: sources.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) })
+  return (
+    <div className="space-y-3">
+      {sources.map((source, i) => (
+        <div key={i} className="rounded-xl border border-line p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-ink-2">카테고리 {i + 1}</span>
+            {sources.length > 1 && (
+              <button
+                type="button"
+                className="icon-btn w-8 h-8"
+                onClick={() => onChange({ ...c, sources: sources.filter((_, idx) => idx !== i) })}
+                aria-label={`카테고리 ${i + 1} 빼기`}
+              >
+                <XIcon size={16} />
+              </button>
+            )}
+          </div>
+          <CategoryPicker value={source.categoryId} onChange={categoryId => setSource(i, { categoryId })} />
+          <select className="input" value={source.aggregation || 'max'} onChange={e => setSource(i, { aggregation: e.target.value })} aria-label="계산 방법">
+            {AGGREGATIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="btn btn-sm btn-secondary w-full"
+        onClick={() => onChange({ ...c, sources: [...sources, { categoryId: null, aggregation: 'max' }] })}
+      >
+        <PlusIcon size={16} /> 카테고리 추가
+      </button>
+      <Row>
+        합계 <NumberField value={c.target} onChange={target => onChange({ ...c, target })} aria-label="목표 값" /> {unitInput} 이상
+      </Row>
+      <Hint>예: 벤치 프레스·스쿼트·데드리프트의 최고 기록을 더한 '3대 중량'.</Hint>
+    </div>
+  )
+}
+
+function CompositeFields({ condition: c, onChange }) {
+  const parts = c.conditions || []
+  const setPart = (i, part) => onChange({ ...c, conditions: parts.map((p, idx) => (idx === i ? part : p)) })
+  const partTypes = RECORD_TYPES.filter(t => COMPOSABLE_CONDITION_TYPES.includes(t.value))
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-slate-400">업적의 카테고리 필드는 비워두세요 — 이 조건은 여러 카테고리를 집계합니다.</p>
-
-      {sources.map((src, i) => (
-        <div key={i} className="flex items-start gap-2 bg-white border border-slate-200 rounded-lg p-2">
-          <div className="flex-1 space-y-1.5">
-            <CategoryTreeSelector
-              value={src.categoryId || null}
-              onChange={id => updateSource(i, 'categoryId', id)}
-            />
-            <select
-              value={src.aggregation || 'max'}
-              onChange={e => updateSource(i, 'aggregation', e.target.value)}
-              className="w-full px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary"
-            >
-              {AGGREGATION_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
+      <div className="flex items-center rounded-full bg-sunken p-0.5 w-fit" role="radiogroup" aria-label="묶는 방법">
+        {[['AND', '모두 채우기'], ['OR', '하나만 채워도 됨']].map(([op, label]) => (
           <button
+            key={op}
             type="button"
-            onClick={() => removeSource(i)}
-            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 rounded transition-colors flex-shrink-0 mt-0.5"
+            role="radio"
+            aria-checked={(c.operator || 'AND') === op}
+            onClick={() => onChange({ ...c, operator: op })}
+            className={`h-8 px-3.5 rounded-full text-sm font-medium transition-colors ${(c.operator || 'AND') === op ? 'bg-surface text-ink shadow-card' : 'text-ink-2'}`}
           >
-            ×
+            {label}
           </button>
+        ))}
+      </div>
+      {parts.map((part, i) => (
+        <div key={i} className="rounded-xl border border-line p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <select
+              className="input flex-1"
+              value={part.type}
+              onChange={e => setPart(i, defaultCondition(e.target.value, part))}
+              aria-label={`조건 ${i + 1} 종류`}
+            >
+              {partTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            {parts.length > 1 && (
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => onChange({ ...c, conditions: parts.filter((_, idx) => idx !== i) })}
+                aria-label={`조건 ${i + 1} 빼기`}
+              >
+                <XIcon size={16} />
+              </button>
+            )}
+          </div>
+          <RecordConditionFields condition={part} onChange={p => setPart(i, p)} />
         </div>
       ))}
-
       <button
         type="button"
-        onClick={addSource}
-        className="w-full px-2 py-1.5 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors"
+        className="btn btn-sm btn-secondary w-full"
+        onClick={() => onChange({ ...c, conditions: [...parts, defaultCondition('count')] })}
       >
-        + 소스 카테고리 추가
+        <PlusIcon size={16} /> 조건 추가
       </button>
-
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-slate-500 w-16 flex-shrink-0">합계 목표</label>
-        <input
-          type="number"
-          min={0}
-          step="any"
-          value={condition.target || ''}
-          onChange={e => update('target', Number(e.target.value))}
-          placeholder="500"
-          className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-        />
-      </div>
     </div>
   )
 }
 
-function ConditionBlock({ condition, onChange, onRemove, showRemove }) {
-  const update = (field, val) => onChange({ ...condition, [field]: val })
+// ── Achievement-based fields ─────────────────────────────────────────────────
+
+function AchievementChecklist({ condition: c, onChange, selfId }) {
+  const { achievements, categories } = useApp()
+  const [query, setQuery] = useState('')
+  const selected = c.achievementIds || []
+  const options = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return achievements
+      .filter(a => a.id !== selfId)
+      .filter(a => !q || a.title.toLowerCase().includes(q) || (a.categoryId && getCategoryPathLabel(a.categoryId, categories).toLowerCase().includes(q)))
+  }, [achievements, categories, query, selfId])
+
+  const toggle = (id) => onChange({ ...c, achievementIds: selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id] })
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <select
-          value={condition.type}
-          onChange={e => onChange({ type: e.target.value })}
-          className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-        >
-          {CONDITION_TYPES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-        {showRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 rounded transition-colors"
-          >
-            ×
-          </button>
-        )}
+    <div className="space-y-2">
+      <p className="text-sm text-ink-2">{selected.length}개 고름 · 모두 달성하면 이 업적도 달성해요.</p>
+      <div className="rounded-xl border border-line overflow-hidden">
+        <div className="relative border-b border-line">
+          <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+          <input
+            type="search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="업적 이름이나 카테고리로 찾기"
+            className="w-full h-10 pl-9 pr-3 bg-transparent text-base outline-none placeholder:text-ink-3"
+            aria-label="업적 찾기"
+          />
+        </div>
+        <ul className="max-h-60 overflow-y-auto overscroll-contain scrollbar-thin p-1">
+          {options.map(a => {
+            const isOn = selected.includes(a.id)
+            return (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => toggle(a.id)}
+                  aria-pressed={isOn}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left ${isOn ? 'bg-accent-soft' : 'hover:bg-sunken'}`}
+                >
+                  <span className={`w-5 h-5 flex-shrink-0 rounded-md border flex items-center justify-center ${isOn ? 'bg-accent border-accent text-accent-on' : 'border-line-strong'}`}>
+                    {isOn && <CheckIcon size={13} strokeWidth={2.6} />}
+                  </span>
+                  <Medal tier={a.tier} size={22} earned={a.isEarned} />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-ink truncate">{a.title}</span>
+                    <span className="block text-xs text-ink-3 truncate">
+                      {a.categoryId ? getCategoryPathLabel(a.categoryId, categories) : '모든 기록'}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+          {options.length === 0 && <li className="px-3 py-4 text-center text-sm text-ink-3">맞는 업적이 없어요.</li>}
+        </ul>
       </div>
-
-      {condition.type === 'action' && (
-        <p className="text-xs text-slate-500">이 카테고리에 기록이 1개 이상 있어야 합니다</p>
-      )}
-
-      {condition.type === 'count' && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
-          <input
-            type="number"
-            min={1}
-            value={condition.target || ''}
-            onChange={e => update('target', Number(e.target.value))}
-            placeholder="10"
-            className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-          <span className="text-xs text-slate-400">회</span>
-        </div>
-      )}
-
-      {(condition.type === 'cumulative' || condition.type === 'single' || condition.type === 'daily_cumulative') && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={condition.target || ''}
-              onChange={e => update('target', Number(e.target.value))}
-              placeholder="100"
-              className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-            />
-            <input
-              type="text"
-              value={condition.unit || ''}
-              onChange={e => update('unit', e.target.value)}
-              placeholder="km, kg…"
-              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-          {condition.type === 'daily_cumulative' && (
-            <p className="text-xs text-slate-400">하루 내 여러 기록의 값을 합산하여 목표에 도달하면 획득</p>
-          )}
-        </div>
-      )}
-
-      {condition.type === 'streak' && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">목표</label>
-          <input
-            type="number"
-            min={1}
-            value={condition.target || ''}
-            onChange={e => update('target', Number(e.target.value))}
-            placeholder="7"
-            className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-          <span className="text-xs text-slate-400">연속일</span>
-        </div>
-      )}
-
-      {condition.type === 'tag_match' && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">태그</label>
-          <input
-            type="text"
-            value={condition.tag || ''}
-            onChange={e => update('tag', e.target.value)}
-            placeholder="예: 야외, 아침"
-            className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-        </div>
-      )}
-
-      {condition.type === 'tag_count' && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 w-16 flex-shrink-0">태그</label>
-          <input
-            type="text"
-            value={condition.tag || ''}
-            onChange={e => update('tag', e.target.value)}
-            placeholder="예: 야외, 아침"
-            className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-          <input
-            type="number"
-            min={1}
-            value={condition.target || ''}
-            onChange={e => update('target', Number(e.target.value))}
-            placeholder="5"
-            className="w-16 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-          />
-          <span className="text-xs text-slate-400">회</span>
-        </div>
-      )}
-
-      {condition.type === 'tag_set_complete' && (
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <label className="text-xs text-slate-500 w-16 flex-shrink-0 pt-1">태그 목록</label>
-            <textarea
-              rows={3}
-              value={(condition.tags || []).join(', ')}
-              onChange={e => {
-                const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean)
-                update('tags', tags)
-                update('target', tags.length)
-              }}
-              placeholder="태그를 쉼표로 구분하여 입력"
-              className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary resize-none"
-            />
-          </div>
-          <p className="text-xs text-slate-400 pl-[72px]">
-            {(condition.tags || []).length}개 태그 — 모두 달성해야 획득
-          </p>
-        </div>
-      )}
-
-      {condition.type === 'cross_category_cumulative' && (
-        <CrossCategorySources condition={condition} update={update} />
-      )}
     </div>
   )
 }
 
-function MetaConditionBuilder({ condition, onChange }) {
-  const { achievements } = useApp()
-  const [achSearch, setAchSearch] = useState('')
+function MetaConditionFields({ condition: c, onChange, selfId, categoryId }) {
+  const { categories } = useApp()
+  const scope = categoryId ? `'${getCategoryPathLabel(categoryId, categories)}'` : '전체'
+  switch (c.type) {
+    case 'meta_count':
+      return (
+        <>
+          <Row>
+            업적 <NumberField integer value={c.target} onChange={target => onChange({ ...c, target })} className="w-20" aria-label="목표 개수" /> 개 달성
+          </Row>
+          <Hint>{scope} 업적 중에서 세요(다른 업적으로 달성하는 업적은 빼고). 범위는 위에서 고른 카테고리를 따라요.</Hint>
+        </>
+      )
+    case 'meta_clear':
+      return <Hint>{scope} 업적을 모두 달성하면 달성해요. 나중에 추가한 업적도 포함되고, 다른 업적으로 달성하는 업적은 세지 않아요.</Hint>
+    case 'meta_list':
+      return <AchievementChecklist condition={c} onChange={onChange} selfId={selfId} />
+    default:
+      return null
+  }
+}
 
-  const update = (field, val) => onChange({ ...condition, [field]: val })
+// ── Builder ──────────────────────────────────────────────────────────────────
 
-  const filteredAchievements = achievements.filter(
-    a => a.title.toLowerCase().includes(achSearch.toLowerCase())
-  )
-
-  const toggleAchievement = (id) => {
-    const ids = condition.achievementIds || []
-    const next = ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]
-    update('achievementIds', next)
+export default function ConditionBuilder({ value, onChange, achievementId = null, categoryId = null, error = null }) {
+  const condition = value?.type ? value : { type: 'action' }
+  const changeType = (type) => {
+    if (type !== condition.type) onChange(defaultCondition(type, condition))
   }
 
   return (
     <div className="space-y-3">
       <select
+        className="input"
         value={condition.type}
-        onChange={e => onChange({ type: e.target.value })}
-        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+        onChange={e => changeType(e.target.value)}
+        aria-label="달성 방법"
       >
-        {META_TYPES.map(t => (
-          <option key={t.value} value={t.value}>{t.label}</option>
-        ))}
+        <optgroup label="기록으로 달성">
+          {RECORD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </optgroup>
+        <optgroup label="다른 업적으로 달성">
+          {META_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </optgroup>
+        <optgroup label="기타">
+          {OTHER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </optgroup>
+        {!LABEL_BY_TYPE[condition.type] && <option value={condition.type}>알 수 없는 조건</option>}
       </select>
 
-      {(condition.type === 'meta_count' || condition.type === 'meta_clear') && (
-        <div className="space-y-2">
-          <label className="text-xs text-slate-500 font-medium">카테고리</label>
-          <CategoryTreeSelector
-            value={condition.categoryId || null}
-            onChange={id => update('categoryId', id)}
-          />
-          {condition.type === 'meta_count' && (
-            <div className="flex items-center gap-2 mt-2">
-              <label className="text-xs text-slate-500 w-16">목표</label>
-              <input
-                type="number"
-                min={1}
-                value={condition.target || ''}
-                onChange={e => update('target', Number(e.target.value))}
-                placeholder="5"
-                className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:border-primary"
-              />
-              <span className="text-xs text-slate-400">업적 획득</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {condition.type === 'meta_list' && (
-        <div className="space-y-2">
-          <label className="text-xs text-slate-500 font-medium">필요 업적</label>
-          {/* Tag chips for selected */}
-          {(condition.achievementIds || []).length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {(condition.achievementIds || []).map(id => {
-                const a = achievements.find(x => x.id === id)
-                return a ? (
-                  <span
-                    key={id}
-                    className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                  >
-                    {a.title}
-                    <button
-                      type="button"
-                      onClick={() => toggleAchievement(id)}
-                      className="hover:text-red-500"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ) : null
-              })}
-            </div>
-          )}
-          <input
-            type="text"
-            value={achSearch}
-            onChange={e => setAchSearch(e.target.value)}
-            placeholder="업적 검색…"
-            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-          />
-          <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-            {filteredAchievements.slice(0, 20).map(a => (
-              <label key={a.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={(condition.achievementIds || []).includes(a.id)}
-                  onChange={() => toggleAchievement(a.id)}
-                  className="rounded border-slate-300 text-primary"
-                />
-                <span className="text-sm text-slate-700 truncate">{a.title}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default function ConditionBuilder({ type, value, onChange }) {
-  // value is the condition object or composite
-
-  const isMeta = type === 'meta'
-
-  if (isMeta) {
-    const metaCondition = value && ['meta_count', 'meta_list', 'meta_clear'].includes(value.type)
-      ? value
-      : { type: 'meta_count' }
-
-    return (
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-        <MetaConditionBuilder condition={metaCondition} onChange={onChange} />
+      <div className="rounded-xl bg-sunken/60 p-3.5">
+        {condition.type === 'composite' ? (
+          <CompositeFields condition={condition} onChange={onChange} />
+        ) : isMetaCondition(condition) ? (
+          <MetaConditionFields condition={condition} onChange={onChange} selfId={achievementId} categoryId={categoryId} />
+        ) : condition.type === 'manual' ? (
+          <Hint>기록과 상관없이, 업적을 눌러 '달성했어요'로 직접 체크해요. 버킷리스트처럼 한 번뿐인 일에 좋아요.</Hint>
+        ) : (
+          <RecordConditionFields condition={condition} onChange={onChange} />
+        )}
       </div>
-    )
-  }
-
-  // For one-time / repeatable: list of condition blocks
-  // Normalize: always work with an array of blocks + optional operator
-  let blocks = []
-  let operator = 'AND'
-
-  if (!value || value.type === undefined) {
-    blocks = [{ type: 'action' }]
-  } else if (value.type === 'composite') {
-    blocks = value.conditions || [{ type: 'action' }]
-    operator = value.operator || 'AND'
-  } else {
-    blocks = [value]
-  }
-
-  const emitChange = (newBlocks, newOperator) => {
-    if (newBlocks.length === 1) {
-      onChange(newBlocks[0])
-    } else {
-      onChange({ type: 'composite', operator: newOperator, conditions: newBlocks })
-    }
-  }
-
-  const addBlock = () => {
-    emitChange([...blocks, { type: 'action' }], operator)
-  }
-
-  const updateBlock = (i, block) => {
-    const next = blocks.map((b, idx) => idx === i ? block : b)
-    emitChange(next, operator)
-  }
-
-  const removeBlock = (i) => {
-    const next = blocks.filter((_, idx) => idx !== i)
-    emitChange(next, operator)
-  }
-
-  const toggleOperator = () => {
-    const next = operator === 'AND' ? 'OR' : 'AND'
-    emitChange(blocks, next)
-  }
-
-  return (
-    <div className="space-y-3">
-      {blocks.map((block, i) => (
-        <React.Fragment key={i}>
-          <ConditionBlock
-            condition={block}
-            onChange={b => updateBlock(i, b)}
-            onRemove={() => removeBlock(i)}
-            showRemove={blocks.length > 1}
-          />
-          {i < blocks.length - 1 && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 border-t border-slate-200" />
-              <button
-                type="button"
-                onClick={toggleOperator}
-                className="px-3 py-1 text-xs font-medium rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
-              >
-                {operator}
-              </button>
-              <div className="flex-1 border-t border-slate-200" />
-            </div>
-          )}
-        </React.Fragment>
-      ))}
-
-      <button
-        type="button"
-        onClick={addBlock}
-        className="w-full px-3 py-2 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary hover:text-primary transition-colors"
-      >
-        + 조건 추가
-      </button>
+      {error && <p className="field-error">{error}</p>}
     </div>
   )
 }

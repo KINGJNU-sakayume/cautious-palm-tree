@@ -1,40 +1,19 @@
 import React from 'react'
 
-const TIER_COLORS = {
-  bronze: '#cd7f32',
-  silver: '#9ca3af',
-  gold: '#f59e0b',
-  platinum: '#6366f1',
-  diamond: '#06b6d4',
-  legendary: '#7F77DD',
-}
-
-export default function ProgressBar({
-  current = 0,
-  target = 1,
-  tier,
-  color,
-  heightClass = 'h-3',
-  showLabel = false,
-  className = '',
-}) {
-  const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0
-  const fillColor = color || (tier ? TIER_COLORS[tier] : '#0066FF')
-
+/** `value` is a 0–1 ratio. */
+export default function ProgressBar({ value = 0, height = 6, className = '', label }) {
+  const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
   return (
-    <div className={`w-full ${className}`}>
-      <div className={`w-full bg-slate-100 rounded-full overflow-hidden ${heightClass}`}>
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: fillColor }}
-        />
-      </div>
-      {showLabel && (
-        <div className="mt-1 flex justify-between text-xs text-slate-500">
-          <span>{current}</span>
-          <span>{target}</span>
-        </div>
-      )}
+    <div
+      className={`w-full rounded-full bg-sunken overflow-hidden ${className}`}
+      style={{ height }}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-label={label}
+    >
+      <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
     </div>
   )
 }

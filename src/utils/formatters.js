@@ -1,207 +1,69 @@
-/**
- * Format a YYYY-MM-DD string as "2025년 3월 15일"
- */
+import { parseDateStr, todayStr, daysBetween } from './dates.js'
+
+export { todayStr }
+
+const WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+
+/** '2026-03-15' → '2026년 3월 15일' */
 export function formatDate(dateStr) {
   if (!dateStr) return ''
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+  const d = parseDateStr(dateStr)
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
-/**
- * Format a YYYY-MM-DD string as "3월 15일"
- */
+/** '2026-03-15' → '3월 15일' (the year is added when it isn't this year) */
 export function formatDateShort(dateStr) {
   if (!dateStr) return ''
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+  const d = parseDateStr(dateStr)
+  const sameYear = d.getFullYear() === new Date().getFullYear()
+  return `${sameYear ? '' : `${d.getFullYear()}년 `}${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
-/**
- * Format a YYYY-MM-DD string as "2025년 3월"
- */
-export function formatMonthYear(dateStr) {
+/** '오늘', '어제', otherwise '3월 15일' */
+export function formatDayLabel(dateStr, today = todayStr()) {
+  const diff = daysBetween(dateStr, today)
+  if (diff === 0) return '오늘'
+  if (diff === 1) return '어제'
+  return formatDateShort(dateStr)
+}
+
+/** '2026-03-15' → '3월 15일 일요일' */
+export function formatDateWithWeekday(dateStr) {
   if (!dateStr) return ''
-  const [year, month] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, 1)
-  return date.toLocaleDateString('ko-KR', { month: 'short', year: 'numeric' })
+  return `${formatDateShort(dateStr)} ${WEEKDAYS[parseDateStr(dateStr).getDay()]}`
 }
 
-/**
- * Returns today as YYYY-MM-DD
- */
-export function todayStr() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+/** '2026-03' → '2026년 3월' */
+export function formatMonth(yyyyMm) {
+  const [y, m] = yyyyMm.split('-').map(Number)
+  return `${y}년 ${m}월`
 }
 
-/**
- * Human-readable label for a tier string.
- */
-export function tierLabel(tier) {
-  const labels = {
-    bronze: '브론즈',
-    silver: '실버',
-    gold: '골드',
-    platinum: '플래티넘',
-    diamond: '다이아몬드',
-    legendary: '레전더리',
-  }
-  return labels[tier] || tier
-}
-
-/**
- * Human-readable summary of an achievement condition.
- */
-export function conditionSummaryText(condition, progress) {
-  if (!condition) return '—'
-  switch (condition.type) {
-    case 'action':
-      return '기록 1개 이상 달성'
-    case 'count':
-      return `기록 ${condition.target}회 달성`
-    case 'cumulative':
-      return `${condition.target}${condition.unit ? ' ' + condition.unit : ''} 누적 달성`
-    case 'single':
-      return `단일 기록 ≥ ${condition.target}${condition.unit ? ' ' + condition.unit : ''}`
-    case 'streak':
-      return `${condition.target}일 연속 달성`
-    case 'daily_cumulative':
-      return `하루 합계 ${condition.target}${condition.unit ? ' ' + condition.unit : ''} 달성`
-    case 'cross_category_cumulative':
-      return `여러 카테고리 합산 ${condition.target}${condition.unit ? ' ' + condition.unit : ''} 달성`
-    case 'tag_match':
-      return `태그 "${condition.tag}" 기록 1개 이상`
-    case 'tag_count':
-      return `태그 "${condition.tag}" 기록 ${condition.target}회 달성`
-    case 'composite': {
-      const parts = condition.conditions.map(c => conditionSummaryText(c))
-      return parts.join(condition.operator === 'OR' ? ' 또는 ' : ' 그리고 ')
-    }
-    case 'meta_count':
-      return `카테고리 내 업적 ${condition.target}개 획득`
-    case 'meta_list':
-      return `특정 업적 ${condition.achievementIds?.length || 0}개 획득`
-    case 'meta_clear':
-      return '카테고리 내 모든 업적 달성'
-    case 'tag_set_complete':
-      return `${progress ?? 0} / ${condition.tags.length} 완료`
-    default:
-      return condition.type
-  }
-}
-
-/**
- * Type label for display
- */
-export function typeLabel(type) {
-  const labels = {
-    'one-time': '일회성',
-    repeatable: '반복 가능',
-    meta: '메타',
-  }
-  return labels[type] || type
-}
-
-/**
- * Returns a relative time string like "2일 전", "오늘"
- */
-export function relativeTime(dateStr) {
+/** '오늘', '어제', '3일 전', '2주 전', '5개월 전', '1년 전' */
+export function relativeDay(dateStr, today = todayStr()) {
   if (!dateStr) return ''
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  const now = new Date()
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return '오늘'
-  if (diffDays === 1) return '어제'
-  if (diffDays < 7) return `${diffDays}일 전`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전`
-  return `${Math.floor(diffDays / 365)}년 전`
+  const diff = daysBetween(dateStr, today)
+  if (diff < 0) return formatDateShort(dateStr)
+  if (diff === 0) return '오늘'
+  if (diff === 1) return '어제'
+  if (diff < 7) return `${diff}일 전`
+  if (diff < 30) return `${Math.floor(diff / 7)}주 전`
+  if (diff < 365) return `${Math.floor(diff / 30)}개월 전`
+  return `${Math.floor(diff / 365)}년 전`
 }
 
-/**
- * Generate a unique ID with a given prefix
- */
+/** 12345.6789 → '12,345.679', 42.195 → '42.195' */
+export function formatNumber(value, maxFractionDigits = 3) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '0'
+  return n.toLocaleString('ko-KR', { maximumFractionDigits: maxFractionDigits })
+}
+
+/** Value with its unit, written the Korean way: '5.2km', '1,000페이지'. */
+export function formatAmount(value, unit) {
+  return `${formatNumber(value)}${unit ? unit.trim() : ''}`
+}
+
 export function generateId(prefix = 'id') {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
-
-/**
- * Resolves the numeric progress target from an achievement condition,
- * handling simple, composite, and action-type conditions.
- */
-export function getConditionTarget(condition) {
-  if (!condition) return 1
-  if (condition.type === 'composite') return 100
-  if (condition.type === 'tag_set_complete') return condition.tags?.length || 1
-  if (condition.type === 'meta_list') return condition.achievementIds?.length || 1
-  if (condition.target != null) return condition.target
-  if (condition.type === 'action' || condition.type === 'tag_match' || condition.type === 'meta_clear') return 1
-  return 1
-}
-
-/**
- * Canonical display string for an achievement's earned/locked status.
- */
-export function achievementStatusText(isEarned) {
-  return isEarned ? '✓ 획득' : '🔒 잠김'
-}
-
-/**
- * Motivational subtext for a tier-based toast notification.
- */
-export function tierSubtext(tier) {
-  const map = {
-    legendary:   '탁월한 업적을 달성했습니다!',
-    diamond:     '탁월한 업적을 달성했습니다!',
-    platinum:    '희귀한 마일스톤에 도달했습니다!',
-    gold:        '희귀한 마일스톤에 도달했습니다!',
-    silver:      '새로운 업적을 달성했습니다!',
-    bronze:      '새로운 업적을 달성했습니다!',
-  }
-  return map[tier] || '새로운 업적을 달성했습니다!'
-}
-
-/**
- * Truncates a category breadcrumb path from the left, preserving a clean
- * separator boundary when possible.
- */
-export function truncateCategoryPathLeft(text, maxLen = 38) {
-  if (text.length <= maxLen) return text
-  const trimmed = text.slice(text.length - maxLen)
-  const sepIdx = trimmed.indexOf(' › ')
-  return '…' + (sepIdx !== -1 ? trimmed.slice(sepIdx) : trimmed)
-}
-
-/**
- * Full rarity display string, appending "(희귀)" for achievements below 5%.
- */
-export function rarityText(rarity) {
-  if (rarity == null || Number.isNaN(Number(rarity))) return '—'
-  return rarity < 5 ? `${rarity} (희귀)` : String(rarity)
-}
-
-/**
- * Returns the YYYY-MM portion of a YYYY-MM-DD string.
- */
-export function dateToMonth(dateStr) {
-  return dateStr?.slice(0, 7) ?? ''
-}
-
-/**
- * Renders a progress display template string, substituting {current}, {total},
- * {remaining}, {pct}, and {last_date} tokens with the provided values.
- */
-export function renderTemplate(template, values) {
-  if (!template) return ''
-  const current = values.current ?? 0
-  const total = values.total ?? 0
-  return template
-    .replace(/{current}/g, current)
-    .replace(/{total}/g, total)
-    .replace(/{remaining}/g, total - current)
-    .replace(/{pct}/g, total > 0 ? Math.round((current / total) * 100) : 0)
-    .replace(/{last_date}/g, values.lastDate ?? '—')
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }

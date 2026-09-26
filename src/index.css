@@ -1,143 +1,207 @@
-:root {
-  /* Type scale */
-  --type-page: 20px;
-  --type-section: 18px;
-  --type-card: 15px;
-  --type-body: 14px;
-  --type-secondary: 12px;
-  --type-badge: 11px;
-
-  /* Semantic color tokens */
-  --color-text-secondary: #94a3b8;
-  --color-text-success: #16a34a;
-  --color-background-primary: #ffffff;
-  --color-border: #e2e8f0;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens ───────────────────────────────────────────────────────────
+   Warm paper background, ink text and one green accent. Colours are RGB
+   channels so Tailwind opacity modifiers (bg-accent/10) keep working. */
+:root {
+  color-scheme: light;
+
+  --c-paper: 246 245 241;
+  --c-surface: 255 255 255;
+  --c-sunken: 240 238 233;
+  --c-line: 229 226 219;
+  --c-line-strong: 210 205 195;
+  --c-ink: 31 30 27;
+  --c-ink-2: 94 90 82;
+  --c-ink-3: 138 133 124;
+  --c-accent: 47 111 78;
+  --c-accent-strong: 37 91 63;
+  --c-accent-soft: 228 239 232;
+  --c-accent-ink: 36 88 61;
+  --c-on-accent: 255 255 255;
+  --c-danger: 186 58 40;
+  --c-danger-soft: 250 233 229;
+  --c-warn: 176 108 18;
+  --c-warn-soft: 250 239 220;
+
+  --tier-bronze: #B7773F;
+  --tier-bronze-ink: #8A5527;
+  --tier-silver: #8E99A5;
+  --tier-silver-ink: #5B6571;
+  --tier-gold: #C9982A;
+  --tier-gold-ink: #86660F;
+  --tier-platinum: #6F86A8;
+  --tier-platinum-ink: #4A5F80;
+  --tier-diamond: #2C9DBD;
+  --tier-diamond-ink: #17728C;
+
+  --topbar-h: 56px;
+  --tabbar-h: 60px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --c-paper: 22 22 20;
+    --c-surface: 31 31 28;
+    --c-sunken: 40 39 36;
+    --c-line: 52 51 47;
+    --c-line-strong: 72 70 65;
+    --c-ink: 236 234 228;
+    --c-ink-2: 182 178 169;
+    --c-ink-3: 134 130 122;
+    --c-accent: 94 170 128;
+    --c-accent-strong: 118 190 150;
+    --c-accent-soft: 34 56 44;
+    --c-accent-ink: 152 207 175;
+    --c-on-accent: 14 32 22;
+    --c-danger: 234 116 98;
+    --c-danger-soft: 66 36 31;
+    --c-warn: 226 162 74;
+    --c-warn-soft: 62 47 26;
+
+    --tier-bronze-ink: #D8A06C;
+    --tier-silver-ink: #B8C1CB;
+    --tier-gold-ink: #E4BC55;
+    --tier-platinum-ink: #A3B6D4;
+    --tier-diamond-ink: #62C3DD;
+  }
+}
+
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background-color: #F8FAFC;
-    color: #1e293b;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-paper text-ink font-sans text-base antialiased;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
-  * {
-    box-sizing: border-box;
+  h1, h2, h3 {
+    @apply tracking-tight;
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-accent));
+    outline-offset: 2px;
   }
-  ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+
+  ::selection {
+    background: rgb(var(--c-accent) / 0.2);
   }
-  ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl text-base font-semibold
+      whitespace-nowrap transition-colors select-none
+      disabled:opacity-45 disabled:cursor-not-allowed;
+  }
+  .btn-sm {
+    @apply h-8 px-3 text-sm rounded-lg;
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-on hover:bg-accent-strong active:bg-accent-strong;
+  }
+  .btn-secondary {
+    @apply bg-surface text-ink border border-line hover:bg-sunken;
+  }
+  .btn-ghost {
+    @apply text-ink-2 hover:bg-sunken hover:text-ink;
+  }
+  .btn-danger {
+    @apply bg-danger text-surface hover:opacity-90;
+  }
+  .btn-danger-outline {
+    @apply text-danger border border-danger/30 hover:bg-danger-soft;
+  }
+  .icon-btn {
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg text-ink-2 transition-colors
+      hover:bg-sunken hover:text-ink;
+  }
+
+  .card {
+    @apply bg-surface border border-line rounded-2xl;
+  }
+
+  .field-label {
+    @apply block text-sm font-medium text-ink-2 mb-1.5;
+  }
+  .field-hint {
+    @apply mt-1.5 text-xs text-ink-3;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs text-danger;
+  }
+  .input {
+    @apply w-full h-10 px-3 rounded-xl bg-surface border border-line text-base text-ink
+      placeholder:text-ink-3 outline-none transition-colors
+      focus:border-accent focus:ring-2 focus:ring-accent/15;
+  }
+  textarea.input {
+    @apply h-auto py-2.5 resize-none;
+  }
+  select.input {
+    @apply pr-8 appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A857C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-position: right 10px center;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-medium border
+      border-line bg-surface text-ink-2 transition-colors hover:border-line-strong hover:text-ink;
+  }
+  .chip-active {
+    @apply border-accent/40 bg-accent-soft text-accent-ink hover:text-accent-ink;
+  }
+  .tag {
+    @apply inline-flex items-center h-6 px-2 rounded-md text-xs font-medium bg-sunken text-ink-2;
+  }
+
+  .section-title {
+    @apply text-md font-semibold text-ink tracking-tight;
+  }
+
+  /* Touch devices can't hover, so hover-only controls stay visible there. */
+  .reveal-on-hover {
+    @apply opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity;
+  }
+  @media (hover: none) {
+    .reveal-on-hover {
+      opacity: 1;
+    }
   }
 }
 
 @layer utilities {
-  /* Platinum shimmer — cannot be expressed as a Tailwind utility */
-  .tier-platinum-badge {
-    background: linear-gradient(90deg, #6366f1 0%, #818cf8 30%, #a5b4fc 50%, #818cf8 70%, #6366f1 100%);
-    background-size: 200% auto;
-    animation: shimmer 2.5s linear infinite;
-    color: white;
-  }
-
-  .tier-platinum-text {
-    background: linear-gradient(90deg, #6366f1 0%, #818cf8 30%, #a5b4fc 50%, #818cf8 70%, #6366f1 100%);
-    background-size: 200% auto;
-    animation: shimmer 2.5s linear infinite;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .achievement-rare-border {
-    border: 1.5px solid #f59e0b;
-    box-shadow: 0 0 8px 1px rgba(245, 158, 11, 0.25);
-  }
-
   .scrollbar-thin {
     scrollbar-width: thin;
+    scrollbar-color: rgb(var(--c-line-strong)) transparent;
   }
-
-  /* Legendary tier badge — deep purple glow */
-  .tier-badge-legendary {
-    background: #3C3489;
-    color: #CECBF6;
-    box-shadow: 0 0 8px 2px rgba(127, 119, 221, 0.55);
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
   }
-
-  /* Showcase two-column lower layout */
-  .showcase-lower {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  @media (max-width: 768px) {
-    .showcase-lower {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Pinned achievement slot — legendary glow */
-  .pin-slot-legendary {
-    border-color: #7F77DD !important;
-    box-shadow: 0 0 10px 2px rgba(127, 119, 221, 0.6);
-  }
-
-  /* Pin slots: flex row on desktop, 3+2 grid on mobile */
-  .pin-slots-grid {
-    display: flex;
-    gap: 12px;
-  }
-
-  @media (max-width: 767px) {
-    .pin-slots-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-  }
-
-  /* Checklist expand/collapse animation */
-  .checklist-expand {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 200ms ease;
-  }
-  .checklist-expand.open {
-    max-height: 1000px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .tier-badge-legendary {
-    box-shadow: 0 0 8px 2px rgba(127, 119, 221, 0.75);
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tier-badge-legendary {
-    box-shadow: none;
-    outline: 1.5px solid #7F77DD;
-  }
-  .pin-slot-legendary {
-    box-shadow: none;
-    outline: 1.5px solid #7F77DD;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -9,103 +9,93 @@
 
 /**
  * Build a nested tree from a flat category array.
- * Returns an array of root nodes, each with a `children` array.
+ * Categories whose parent isn't in the list become roots.
  * @param {Category[]} flatCategories
  * @returns {TreeNode[]}
  */
 export function buildTree(flatCategories) {
-  const map = new Map()
-  flatCategories.forEach(cat => {
-    map.set(cat.id, { ...cat, children: [] })
-  })
-
+  const map = new Map(flatCategories.map(cat => [cat.id, { ...cat, children: [] }]))
   const roots = []
-  flatCategories.forEach(cat => {
+  for (const cat of flatCategories) {
     const node = map.get(cat.id)
-    if (cat.parentId === null) {
-      roots.push(node)
-    } else {
-      const parent = map.get(cat.parentId)
-      if (parent) {
-        parent.children.push(node)
-      }
-    }
-  })
+    const parent = cat.parentId ? map.get(cat.parentId) : null
+    if (parent) parent.children.push(node)
+    else roots.push(node)
+  }
   return roots
 }
 
 /**
- * Returns an array of category objects from root to the given node (inclusive).
- * e.g. [Fitness, Strength, Bench Press]
- * @param {string} categoryId
- * @param {Category[]} flatCategories
+ * Categories from the root down to the given one (inclusive).
  * @returns {Category[]}
  */
 export function getCategoryPath(categoryId, flatCategories) {
   const map = new Map(flatCategories.map(c => [c.id, c]))
   const path = []
+  const seen = new Set()
   let current = map.get(categoryId)
-  while (current) {
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id)
     path.unshift(current)
     current = current.parentId ? map.get(current.parentId) : null
   }
   return path
 }
 
+/** '피트니스 › 근력 운동 › 벤치 프레스' */
+export function getCategoryPathLabel(categoryId, flatCategories, separator = ' › ') {
+  return getCategoryPath(categoryId, flatCategories).map(c => c.name).join(separator)
+}
+
 /**
- * Returns all descendant IDs (not including the node itself) via BFS.
- * @param {string} categoryId
- * @param {Category[]} flatCategories
+ * All descendant ids (not including the category itself), breadth first.
  * @returns {string[]}
  */
 export function getDescendantIds(categoryId, flatCategories) {
   const childrenMap = new Map()
-  flatCategories.forEach(cat => {
-    if (cat.parentId) {
-      if (!childrenMap.has(cat.parentId)) childrenMap.set(cat.parentId, [])
-      childrenMap.get(cat.parentId).push(cat.id)
-    }
-  })
-
+  for (const cat of flatCategories) {
+    if (!cat.parentId) continue
+    if (!childrenMap.has(cat.parentId)) childrenMap.set(cat.parentId, [])
+    childrenMap.get(cat.parentId).push(cat.id)
+  }
   const result = []
   const queue = [categoryId]
   while (queue.length > 0) {
-    const id = queue.shift()
-    const children = childrenMap.get(id) || []
-    children.forEach(childId => {
+    for (const childId of childrenMap.get(queue.shift()) || []) {
+      if (result.includes(childId)) continue
       result.push(childId)
       queue.push(childId)
-    })
+    }
   }
   return result
 }
 
-/**
- * Find a category by ID.
- * @param {string} categoryId
- * @param {Category[]} flatCategories
- * @returns {Category|null}
- */
-export function getCategoryById(categoryId, flatCategories) {
-  return flatCategories.find(c => c.id === categoryId) || null
+/** The category and all of its descendants. */
+export function getSubtreeIds(categoryId, flatCategories) {
+  return new Set([categoryId, ...getDescendantIds(categoryId, flatCategories)])
 }
 
-/**
- * Returns all category IDs that are direct children of the given parentId.
- * @param {string} parentId
- * @param {Category[]} flatCategories
- * @returns {Category[]}
- */
+/** Direct children, in list order. */
 export function getDirectChildren(parentId, flatCategories) {
   return flatCategories.filter(c => c.parentId === parentId)
 }
 
-/**
- * Returns true if the category is a leaf (no children).
- * @param {string} categoryId
- * @param {Category[]} flatCategories
- * @returns {boolean}
- */
 export function isLeafCategory(categoryId, flatCategories) {
   return !flatCategories.some(c => c.parentId === categoryId)
+}
+
+/**
+ * Ids to show when filtering the tree by name: every match plus its ancestors,
+ * so a match deep in the tree stays reachable.
+ * @returns {Set<string>|null} null when there is no query
+ */
+export function visibleIdsForQuery(query, flatCategories) {
+  const q = query.trim().toLowerCase()
+  if (!q) return null
+  const visible = new Set()
+  for (const cat of flatCategories) {
+    if (!cat.name.toLowerCase().includes(q)) continue
+    for (const c of getCategoryPath(cat.id, flatCategories)) visible.add(c.id)
+  }
+  return visible
 }
