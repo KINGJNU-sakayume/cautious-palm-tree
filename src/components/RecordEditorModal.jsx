@@ -1,20 +1,43 @@
-import React, { useId, useMemo, useRef, useState } from 'react'
+import React, { useDeferredValue, useId, useMemo, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
+import Medal from './Medal.jsx'
+import ProgressBar from './ProgressBar.jsx'
 import CategoryPicker from './CategoryPicker.jsx'
+import TagInput from './TagInput.jsx'
 import { useApp } from '@/context/AppContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { useConfirm } from '@/hooks/useConfirm.jsx'
+import { getTier } from '@/constants/tiers.js'
+import { recordFromInput } from '@/lib/appState.js'
 import { addDays, isValidDateStr, todayStr } from '@/utils/dates.js'
 import { getDirectChildren } from '@/utils/categoryTree.js'
 import { imageFileToDataUrl } from '@/utils/image.js'
 import { achievementUnits, recentUnits, suggestTags } from '@/utils/suggestions.js'
-import { normalizeTag } from '@/utils/achievementEvaluator.js'
-import TagInput from './TagInput.jsx'
-import { ImageIcon, PlusIcon, TrashIcon, XIcon } from './Icons.jsx'
+import { evaluateAchievements, normalizeTag } from '@/utils/achievementEvaluator.js'
+import { hasMeasurableProgress, progressLabel, progressRatio } from '@/utils/achievementText.js'
+import { canConvert, parseValueInput } from '@/utils/units.js'
+import { AlertIcon, ImageIcon, PlusIcon, TrashIcon, XIcon } from './Icons.jsx'
 
 const SUGGESTION_PREVIEW = 8
+const IMPACT_PREVIEW = 3
+const DRAFT_ID = '__draft-record__'
+const PHOTO_URL_RE = /^https?:\/\/\S+$/
 
-function initialForm(record, categoryId, prefs) {
+/**
+ * Unit and tags a new record in `categoryId` starts with: the category's saved
+ * defaults, otherwise the unit its achievements are measured in — so a quick
+ * "5" in 러닝 is saved as 5km instead of a bare number.
+ */
+function startingValues(categoryId, prefs, achievements, categories) {
+  const saved = categoryId ? prefs.categoryDefaults[categoryId] : null
+  if (!categoryId || saved?.autoApply === false) return { unit: '', tags: [] }
+  return {
+    unit: saved?.defaultUnit || achievementUnits(categoryId, achievements, categories)[0] || '',
+    tags: [...(saved?.defaultTags ?? [])],
+  }
+}
+
+function initialForm(record, categoryId, prefs, achievements, categories) {
   if (record) {
     return {
       categoryId: record.categoryId,
@@ -27,17 +50,118 @@ function initialForm(record, categoryId, prefs) {
     }
   }
   const startCategory = categoryId ?? prefs.lastCategoryId ?? null
-  const defaults = startCategory ? prefs.categoryDefaults[startCategory] : null
-  const apply = defaults?.autoApply !== false
-  return {
-    categoryId: startCategory,
-    date: todayStr(),
-    value: '',
-    unit: apply ? defaults?.defaultUnit ?? '' : '',
-    memo: '',
-    photoUrl: '',
-    tags: apply ? [...(defaults?.defaultTags ?? [])] : [],
-  }
+  const start = startingValues(startCategory, prefs, achievements, categories)
+  return { categoryId: startCategory, date: todayStr(), value: '', unit: start.unit, memo: '', photoUrl: '', tags: start.tags }
+}
+
+/** The form with a unit typed into the value box ('5km') moved to the unit field. */
+function withSplitValue(form) {
+  const parsed = parseValueInput(form.value)
+  if (parsed.error || !parsed.unit) return form
+  return { ...form, value: String(parsed.value), unit: parsed.unit }
+}
+
+function byTier(a, b) {
+  return getTier(b.tier).rank - getTier(a.tier).rank
+}
+
+/** What saving this record would change: achievements gained, lost, or moved forward. */
+function useImpact({ form, record, records, achievements, categories }) {
+  // Memo and photo never change an achievement, so typing there doesn't re-evaluate.
+  const key = JSON.stringify([form.categoryId, form.date, form.value, form.unit, form.tags])
+  const deferredKey = useDeferredValue(key)
+  return useMemo(() => {
+    const [categoryId, date, value, unit, tags] = JSON.parse(deferredKey)
+    if (!categoryId || !isValidDateStr(date) || date > todayStr()) return null
+    const parsed = parseValueInput(value)
+    if (parsed.error || (parsed.value != null && parsed.value < 0)) return null
+
+    const draft = recordFromInput({
+      id: record?.id ?? DRAFT_ID, categoryId, date, value: parsed.value ?? '', unit: parsed.unit ?? unit, tags,
+    })
+    const nextRecords = record ? records.map(r => (r.id === record.id ? draft : r)) : [...records, draft]
+    const after = evaluateAchievements(achievements, nextRecords, categories)
+
+    const gained = []
+    const lost = []
+    const closer = []
+    for (const a of achievements) {
+      const r = after.get(a.id)
+      if (!r || r.error) continue
+      if (r.earned && !a.isEarned) gained.push(a)
+      else if (!r.earned && a.isEarned) lost.push(a)
+      else if (!r.earned && !a.isHidden && hasMeasurableProgress(a.condition) && r.progress > a.progress) {
+        closer.push({ ...a, progress: r.progress, target: r.target })
+      }
+    }
+    gained.sort(byTier)
+    closer.sort((x, y) => progressRatio(y) - progressRatio(x) || byTier(x, y))
+    return { gained, lost, closer }
+  }, [deferredKey, record, records, achievements, categories])
+}
+
+function ImpactList({ title, tone = 'accent', items, render }) {
+  if (items.length === 0) return null
+  const rest = items.length - IMPACT_PREVIEW
+  return (
+    <div>
+      <p className={`text-xs font-semibold mb-1.5 ${tone === 'danger' ? 'text-danger' : 'text-accent-ink'}`}>{title}</p>
+      <ul className="space-y-1.5">
+        {items.slice(0, IMPACT_PREVIEW).map(render)}
+      </ul>
+      {rest > 0 && <p className="mt-1 text-xs text-ink-3">외 {rest}개</p>}
+    </div>
+  )
+}
+
+function ImpactPreview({ impact, isEditing }) {
+  if (!impact) return null
+  const { gained, lost, closer } = impact
+  if (gained.length + lost.length + closer.length === 0) return null
+  return (
+    <section className="rounded-xl bg-sunken/60 px-3.5 py-3 space-y-3" aria-label="이 기록이 반영되는 업적" aria-live="polite">
+      <ImpactList
+        title={isEditing ? '이렇게 고치면 달성해요' : '저장하면 달성해요'}
+        items={gained}
+        render={a => {
+          const secret = a.isHidden
+          return (
+            <li key={a.id} className="flex items-center gap-2.5">
+              <Medal tier={a.tier} earned={!secret} hidden={secret} size={24} />
+              <span className="min-w-0 truncate text-sm font-semibold text-ink">{secret ? '숨겨진 업적' : a.title}</span>
+            </li>
+          )
+        }}
+      />
+      <ImpactList
+        title="이렇게 고치면 다시 잠겨요"
+        tone="danger"
+        items={lost}
+        render={a => (
+          <li key={a.id} className="flex items-center gap-2.5">
+            <Medal tier={a.tier} size={24} />
+            <span className="min-w-0 truncate text-sm font-medium text-ink-2">{a.title}</span>
+          </li>
+        )}
+      />
+      <ImpactList
+        title="가까워지는 업적"
+        items={closer}
+        render={a => (
+          <li key={a.id} className="flex items-center gap-2.5">
+            <Medal tier={a.tier} size={24} />
+            <span className="flex-1 min-w-0">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate text-sm font-medium text-ink">{a.title}</span>
+                <span className="flex-shrink-0 text-xs text-ink-2 tabular">{progressLabel(a)}</span>
+              </span>
+              <ProgressBar value={progressRatio(a)} height={3} className="mt-1" label={`${a.title} 진행도`} />
+            </span>
+          </li>
+        )}
+      />
+    </section>
+  )
 }
 
 /**
@@ -53,7 +177,8 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
   const uid = useId()
   const isEditing = record != null
 
-  const [form, setForm] = useState(() => initialForm(record, categoryId, prefs))
+  const [initial] = useState(() => initialForm(record, categoryId, prefs, achievements, categories))
+  const [form, setForm] = useState(initial)
   const [touched, setTouched] = useState({ unit: false, tags: false })
   const [showAllSuggestions, setShowAllSuggestions] = useState(false)
   const [photoMode, setPhotoMode] = useState(() => (/^https?:/.test(record?.photoUrl ?? '') ? 'url' : 'file'))
@@ -63,17 +188,19 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
   const fileInputRef = useRef(null)
 
   const set = (patch) => setForm(f => ({ ...f, ...patch }))
+  const clearError = (field) => setErrors(e => (e[field] ? { ...e, [field]: null } : e))
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial)
 
   const changeCategory = (nextId) => {
     const patch = { categoryId: nextId }
-    // Fill in that category's defaults unless the user already typed something.
-    const defaults = nextId ? prefs.categoryDefaults[nextId] : null
-    if (!isEditing && defaults?.autoApply !== false) {
-      if (!touched.unit) patch.unit = defaults?.defaultUnit ?? ''
-      if (!touched.tags) patch.tags = [...(defaults?.defaultTags ?? [])]
+    // Fill in that category's unit and tags unless the user already typed something.
+    if (!isEditing) {
+      const start = startingValues(nextId, prefs, achievements, categories)
+      if (!touched.unit) patch.unit = start.unit
+      if (!touched.tags) patch.tags = start.tags
     }
     set(patch)
-    setErrors(e => ({ ...e, categoryId: null }))
+    clearError('categoryId')
     setShowAllSuggestions(false)
   }
 
@@ -91,6 +218,38 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
     () => [...new Set([...units, ...(form.categoryId ? recentUnits(form.categoryId, records) : [])])],
     [units, form.categoryId, records],
   )
+  const impact = useImpact({ form, record, records, achievements, categories })
+
+  // ── Value and unit ──
+  const parsedValue = parseValueInput(form.value)
+  const hasValue = !parsedValue.error && parsedValue.value != null
+  const enteredUnit = (parsedValue.unit ?? form.unit).trim()
+  const unitNote = (() => {
+    if (units.length === 0) return null
+    const list = units.join(', ')
+    if (hasValue && !enteredUnit) {
+      return units.length === 1
+        ? { warn: false, text: `단위를 비워 두면 ${list} 기준으로 계산돼요.` }
+        : { warn: true, text: `이 카테고리 업적은 ${list} 단위를 함께 써요. 어느 단위인지 적어 주세요.` }
+    }
+    if (hasValue && enteredUnit) {
+      const unusable = units.filter(u => !canConvert(enteredUnit, u))
+      if (unusable.length === units.length) {
+        return { warn: true, text: `'${enteredUnit}' 단위는 ${list} 기준 업적에 반영되지 않아요. 횟수나 연속 기록 업적에만 반영돼요.` }
+      }
+      if (unusable.length > 0) {
+        return { warn: true, text: `'${enteredUnit}' 단위는 ${unusable.join(', ')} 기준 업적에는 반영되지 않아요.` }
+      }
+    }
+    return { warn: false, text: `이 카테고리 업적은 ${list} 기준으로 계산돼요. 다른 단위도 바꿀 수 있으면 알아서 바꿔서 더해요.` }
+  })()
+
+  const splitValue = () => {
+    const next = withSplitValue(form)
+    if (next === form) return
+    set({ value: next.value, unit: next.unit })
+    setTouched(t => ({ ...t, unit: true }))
+  }
 
   // ── Tags ──
   const setTags = (tags) => {
@@ -107,6 +266,7 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
     setPhotoBusy(true)
     try {
       set({ photoUrl: await imageFileToDataUrl(file) })
+      clearError('photoUrl')
     } catch (error) {
       toast.error(error.message)
     } finally {
@@ -114,32 +274,48 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
     }
   }
 
-  // ── Save / delete ──
-  const validate = () => {
+  // ── Save / delete / close ──
+  const validate = (data) => {
     const next = {}
-    if (!form.categoryId) next.categoryId = '카테고리를 골라 주세요.'
-    if (!isValidDateStr(form.date)) next.date = '날짜를 확인해 주세요.'
-    else if (form.date > todayStr()) next.date = '미래 날짜는 기록할 수 없어요.'
-    if (form.value.trim() !== '' && !Number.isFinite(Number(form.value))) next.value = '숫자로 입력해 주세요.'
-    setErrors(next)
-    return Object.keys(next).length === 0
+    if (!data.categoryId) next.categoryId = '카테고리를 골라 주세요.'
+    if (!isValidDateStr(data.date)) next.date = '날짜를 확인해 주세요.'
+    else if (data.date > todayStr()) next.date = '미래 날짜는 기록할 수 없어요.'
+    const parsed = parseValueInput(data.value)
+    if (parsed.error) next.value = '숫자로 입력해 주세요. 예: 5.2, 1,000, 5km'
+    else if (parsed.value != null && parsed.value < 0) next.value = '0 이상의 값을 입력해 주세요.'
+    const photoUrl = data.photoUrl.trim()
+    if (photoMode === 'url' && photoUrl && !PHOTO_URL_RE.test(photoUrl)) next.photoUrl = '사진 링크는 http:// 또는 https://로 시작해야 해요.'
+    return next
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validate()) return
-    const data = form
+    const data = withSplitValue(form)
+    const problems = validate(data)
+    setErrors(problems)
+    if (Object.keys(problems).length > 0) return
+    const input = { ...data, value: parseValueInput(data.value).value ?? '', photoUrl: data.photoUrl.trim() }
 
     if (isEditing) {
-      updateRecord({ ...record, ...data })
+      updateRecord({ ...record, ...input })
       toast.success('기록을 수정했어요.')
     } else {
-      addRecord(data)
+      const saved = addRecord(input)
       // Remember the unit the first time one is used in a category.
-      const defaults = prefs.categoryDefaults[data.categoryId]
-      if (data.unit.trim() && !defaults?.defaultUnit) setCategoryDefaults(data.categoryId, { defaultUnit: data.unit.trim() })
+      if (saved.unit && !prefs.categoryDefaults[saved.categoryId]?.defaultUnit) {
+        setCategoryDefaults(saved.categoryId, { defaultUnit: saved.unit })
+      }
       toast.success('기록을 저장했어요.')
     }
+    onClose()
+  }
+
+  const requestClose = async () => {
+    if (dirty && !(await confirm(
+      isEditing ? '고친 내용을 버릴까요?' : '작성 중인 기록을 버릴까요?',
+      '저장하지 않은 내용은 사라져요.',
+      { confirmLabel: '버리기' },
+    ))) return
     onClose()
   }
 
@@ -156,7 +332,7 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
   return (
     <Modal
       title={isEditing ? '기록 수정' : '기록하기'}
-      onClose={onClose}
+      onClose={requestClose}
       footer={
         <div className="flex items-center gap-2">
           {isEditing && (
@@ -166,7 +342,7 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
             </button>
           )}
           <div className="flex-1" />
-          <button type="button" onClick={onClose} className="btn btn-secondary">취소</button>
+          <button type="button" onClick={requestClose} className="btn btn-secondary">취소</button>
           <button type="submit" form={`${uid}-form`} className="btn btn-primary" disabled={photoBusy}>
             {isEditing ? '수정 완료' : '저장'}
           </button>
@@ -179,14 +355,17 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
           <label className="field-label" htmlFor={`${uid}-category`}>카테고리</label>
           <CategoryPicker id={`${uid}-category`} value={form.categoryId} onChange={changeCategory} placeholder="어디에 기록할까요?" />
           {subcategories.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-ink-3 mr-0.5">더 자세히</span>
-              {subcategories.map(child => (
-                <button key={child.id} type="button" className="chip h-7 px-2.5" onClick={() => changeCategory(child.id)}>
-                  {child.name}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-ink-3 mr-0.5">더 자세히</span>
+                {subcategories.map(child => (
+                  <button key={child.id} type="button" className="chip h-7 px-2.5" onClick={() => changeCategory(child.id)}>
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+              <p className="field-hint">여기에 바로 기록하면 하위 카테고리의 업적에는 반영되지 않아요.</p>
+            </>
           )}
           {errors.categoryId && <p className="field-error">{errors.categoryId}</p>}
         </div>
@@ -200,7 +379,7 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
                 <button
                   key={label}
                   type="button"
-                  onClick={() => set({ date })}
+                  onClick={() => { set({ date }); clearError('date') }}
                   className={`chip h-7 px-2.5 ${form.date === date ? 'chip-active' : ''}`}
                 >
                   {label}
@@ -214,7 +393,8 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
             className="input"
             value={form.date}
             max={today}
-            onChange={e => set({ date: e.target.value })}
+            onChange={e => { set({ date: e.target.value }); clearError('date') }}
+            aria-invalid={!!errors.date}
           />
           {errors.date && <p className="field-error">{errors.date}</p>}
         </div>
@@ -230,9 +410,11 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
                 inputMode="decimal"
                 className="input tabular"
                 value={form.value}
-                onChange={e => set({ value: e.target.value })}
+                onChange={e => { set({ value: e.target.value }); clearError('value') }}
+                onBlur={splitValue}
                 placeholder="예: 5.2"
                 autoComplete="off"
+                aria-invalid={!!errors.value}
               />
             </div>
             <div>
@@ -253,13 +435,19 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
             </div>
           </div>
           {errors.value && <p className="field-error">{errors.value}</p>}
-          {units.length > 0 && (
-            <p className="field-hint">
-              이 카테고리 업적은 <strong className="font-semibold text-ink-2">{units.join(', ')}</strong> 기준으로 계산돼요.
-              다른 단위도 환산할 수 있으면 자동으로 바꿔서 더해요.
-            </p>
+          {!errors.value && unitNote && (
+            unitNote.warn ? (
+              <p className="mt-1.5 flex gap-1.5 text-xs text-warn">
+                <AlertIcon size={14} className="flex-shrink-0 mt-px" />
+                <span>{unitNote.text}</span>
+              </p>
+            ) : (
+              <p className="field-hint">{unitNote.text}</p>
+            )
           )}
         </div>
+
+        <ImpactPreview impact={impact} isEditing={isEditing} />
 
         {/* Memo */}
         <div>
@@ -310,7 +498,7 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
               <button
                 type="button"
                 className="text-sm font-medium text-ink-2 hover:text-ink"
-                onClick={() => { setPhotoMode(m => (m === 'file' ? 'url' : 'file')); set({ photoUrl: '' }) }}
+                onClick={() => { setPhotoMode(m => (m === 'file' ? 'url' : 'file')); set({ photoUrl: '' }); clearError('photoUrl') }}
               >
                 {photoMode === 'file' ? '링크로 넣기' : '파일로 넣기'}
               </button>
@@ -358,14 +546,17 @@ export default function RecordEditorModal({ record = null, categoryId = null, on
                 type="url"
                 className="input"
                 value={form.photoUrl}
-                onChange={e => set({ photoUrl: e.target.value })}
+                onChange={e => { set({ photoUrl: e.target.value }); clearError('photoUrl') }}
                 placeholder="https://…"
+                aria-label="사진 링크"
+                aria-invalid={!!errors.photoUrl}
               />
-              {/^https?:\/\/\S+/.test(form.photoUrl) && (
-                <img src={form.photoUrl} alt="링크 사진 미리보기" className="mt-2 w-full max-h-56 object-cover rounded-xl border border-line" />
+              {PHOTO_URL_RE.test(form.photoUrl.trim()) && (
+                <img src={form.photoUrl.trim()} alt="링크 사진 미리보기" className="mt-2 w-full max-h-56 object-cover rounded-xl border border-line" />
               )}
             </>
           )}
+          {errors.photoUrl && <p className="field-error">{errors.photoUrl}</p>}
         </div>
       </form>
       {confirmDialog}
