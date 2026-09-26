@@ -20,10 +20,10 @@
 // Never reuse an achievement or category id for something else.
 
 /** The catalog this app ships. */
-export const CATALOG_VERSION = 2
+export const CATALOG_VERSION = 3
 
 /** Digest of the shipped catalog; see `npm run catalog:snapshot`. */
-export const CATALOG_DIGEST = '18df2d48'
+export const CATALOG_DIGEST = 'c30eb83c'
 
 export const CATALOG_SNAPSHOTS = {
   // The 86-achievement, 33-category catalog that storage schema v2 first
