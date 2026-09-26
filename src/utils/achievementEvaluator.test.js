@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { evaluateAchievements, conditionError, normalizeTag } from './achievementEvaluator.js'
 import { describeCondition, progressLabel } from './achievementText.js'
 import { canConvert, convertValue, parseValueInput } from './units.js'
-import { currentStreak, longestStreak, nextPeriodKey, periodKey } from './dates.js'
+import { currentStreak, dayIndex, longestStreak, periodIndex } from './dates.js'
 
 const categories = [
   { id: 'fit', name: '피트니스', parentId: null },
@@ -453,12 +453,16 @@ describe('helpers', () => {
     expect(parseValueInput('1시간 30분').error).toBe(true)
   })
 
-  it('period keys', () => {
-    expect(periodKey('2026-01-11', 'week')).toBe('2026-01-05')
-    expect(periodKey('2026-01-12', 'week')).toBe('2026-01-12')
-    expect(periodKey('2026-01-12', 'month')).toBe('2026-01')
-    expect(nextPeriodKey('2025-12', 'month')).toBe('2026-01')
-    expect(nextPeriodKey('2025-12-29', 'week')).toBe('2026-01-05')
+  it('day and period indexes', () => {
+    expect(dayIndex('1970-01-01')).toBe(0)
+    expect(dayIndex('2026-03-01') - dayIndex('2026-02-28')).toBe(1)
+    expect(dayIndex('2024-03-01') - dayIndex('2024-02-28')).toBe(2) // leap year
+    // Weeks run Monday–Sunday: 2026-01-05 is a Monday, 2026-01-11 a Sunday.
+    expect(periodIndex('2026-01-11', 'week')).toBe(periodIndex('2026-01-05', 'week'))
+    expect(periodIndex('2026-01-12', 'week')).toBe(periodIndex('2026-01-11', 'week') + 1)
+    expect(periodIndex('2026-01-04', 'week')).toBe(periodIndex('2026-01-05', 'week') - 1)
+    expect(periodIndex('2026-01-31', 'month')).toBe(periodIndex('2025-12-01', 'month') + 1)
+    expect(periodIndex('2026-06-30', 'year')).toBe(2026)
   })
 
   it('streak helpers', () => {

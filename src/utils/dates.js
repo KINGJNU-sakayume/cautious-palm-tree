@@ -36,34 +36,31 @@ export function daysBetween(from, to) {
   return Math.round((parseDateStr(to) - parseDateStr(from)) / 86400000)
 }
 
-/** Monday of the week that `dateStr` falls in (weeks run Monday–Sunday). */
-export function weekStart(dateStr) {
-  return addDays(dateStr, -((parseDateStr(dateStr).getDay() + 6) % 7))
+const dayIndexCache = new Map()
+
+/**
+ * Days since 1970-01-01 for a 'YYYY-MM-DD' string — plain calendar arithmetic,
+ * so consecutive days always differ by exactly 1 (no time zones or DST).
+ */
+export function dayIndex(dateStr) {
+  let n = dayIndexCache.get(dateStr)
+  if (n === undefined) {
+    n = Date.UTC(Number(dateStr.slice(0, 4)), Number(dateStr.slice(5, 7)) - 1, Number(dateStr.slice(8, 10))) / 86400000
+    dayIndexCache.set(dateStr, n)
+  }
+  return n
 }
 
 /**
- * Calendar period a date belongs to, as a sortable key:
- * 'day' → '2026-03-15', 'week' → '2026-03-09' (its Monday), 'month' → '2026-03', 'year' → '2026'.
+ * Number of the calendar period ('day', 'week', 'month' or 'year') a date falls
+ * in. Consecutive periods differ by 1. Weeks run Monday–Sunday.
  */
-export function periodKey(dateStr, period) {
+export function periodIndex(dateStr, period) {
   switch (period) {
-    case 'week': return weekStart(dateStr)
-    case 'month': return dateStr.slice(0, 7)
-    case 'year': return dateStr.slice(0, 4)
-    default: return dateStr
-  }
-}
-
-/** The key of the period right after `key` (see periodKey). */
-export function nextPeriodKey(key, period) {
-  switch (period) {
-    case 'week': return addDays(key, 7)
-    case 'month': {
-      const [y, m] = key.split('-').map(Number)
-      return m === 12 ? `${y + 1}-01` : `${y}-${pad(m + 1)}`
-    }
-    case 'year': return String(Number(key) + 1)
-    default: return addDays(key, 1)
+    case 'week': return Math.floor((dayIndex(dateStr) + 3) / 7) // 1970-01-01 was a Thursday
+    case 'month': return Number(dateStr.slice(0, 4)) * 12 + Number(dateStr.slice(5, 7)) - 1
+    case 'year': return Number(dateStr.slice(0, 4))
+    default: return dayIndex(dateStr)
   }
 }
 
@@ -77,9 +74,10 @@ export function longestStreak(sortedDates) {
   let run = 0
   let prev = null
   for (const date of sortedDates) {
-    run = prev && addDays(prev, 1) === date ? run + 1 : 1
+    const day = dayIndex(date)
+    run = prev != null && day === prev + 1 ? run + 1 : 1
     if (run > longest) longest = run
-    prev = date
+    prev = day
   }
   return longest
 }

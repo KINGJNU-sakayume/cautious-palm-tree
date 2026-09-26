@@ -27,7 +27,7 @@
  * @property {string} [error]             set when the condition is invalid
  */
 
-import { addDays, isValidDateStr, nextPeriodKey, periodKey } from './dates.js'
+import { dayIndex, isValidDateStr, periodIndex } from './dates.js'
 import { recordValueIn } from './units.js'
 import { TIER_IDS, getTier } from '../constants/tiers.js'
 
@@ -207,14 +207,25 @@ function createContext(records, categories) {
     .sort((a, b) => (a.record.date === b.record.date ? a.index - b.index : a.record.date < b.record.date ? -1 : 1))
     .map(({ record }) => record)
 
+  // Most scopes are single categories, so bucket once instead of filtering
+  // every record for every scope.
+  const byCategory = new Map()
+  for (const record of chronological) {
+    const list = byCategory.get(record.categoryId)
+    if (list) list.push(record)
+    else byCategory.set(record.categoryId, [record])
+  }
+
   const scopeCache = new Map()
   function recordsIn(categoryId) {
-    const key = categoryId ?? ''
-    if (!scopeCache.has(key)) {
-      const scope = categoryId ? subtree(categoryId) : null
-      scopeCache.set(key, scope ? chronological.filter(r => scope.has(r.categoryId)) : chronological)
+    if (!categoryId) return chronological
+    if (!scopeCache.has(categoryId)) {
+      const scope = subtree(categoryId)
+      scopeCache.set(categoryId, scope.size === 1
+        ? byCategory.get(categoryId) ?? []
+        : chronological.filter(r => scope.has(r.categoryId)))
     }
-    return scopeCache.get(key)
+    return scopeCache.get(categoryId)
   }
 
   return { recordsIn, subtree }
@@ -261,19 +272,17 @@ function qualifyingDates(records, condition) {
 }
 
 /**
- * Longest run of consecutive keys (days, weeks or months) in an ascending
- * list, and the key at which a run first reached `target`.
+ * Longest run of consecutive numbers (day or period indexes) in an ascending
+ * list, and the position at which a run first reached `target` (-1 if never).
  */
-function longestRun(keys, target, next) {
+function longestRun(numbers, target) {
   let run = 0
   let longest = 0
-  let reachedAt = null
-  let prev = null
-  for (const key of keys) {
-    run = prev != null && next(prev) === key ? run + 1 : 1
+  let reachedAt = -1
+  for (let i = 0; i < numbers.length; i++) {
+    run = i > 0 && numbers[i] === numbers[i - 1] + 1 ? run + 1 : 1
     if (run > longest) longest = run
-    if (reachedAt == null && run >= target) reachedAt = key
-    prev = key
+    if (reachedAt < 0 && run >= target) reachedAt = i
   }
   return { longest, reachedAt }
 }
@@ -310,8 +319,9 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
     case 'streak': {
       // Longest run of consecutive days ever, so back-filled days count too.
       const target = positiveInteger(condition.target)
-      const { longest, reachedAt } = longestRun(qualifyingDates(records, condition), target, d => addDays(d, 1))
-      return result(reachedAt, longest, target)
+      const dates = qualifyingDates(records, condition)
+      const { longest, reachedAt } = longestRun(dates.map(dayIndex), target)
+      return result(dates[reachedAt], longest, target)
     }
 
     case 'period_streak': {
@@ -321,13 +331,14 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       const daysIn = new Map()
       const qualifiedOn = new Map() // period → the day it reached minDays
       for (const date of uniqueDates(records)) {
-        const key = periodKey(date, condition.period)
-        const n = (daysIn.get(key) || 0) + 1
-        daysIn.set(key, n)
-        if (n === minDays) qualifiedOn.set(key, date)
+        const period = periodIndex(date, condition.period)
+        const n = (daysIn.get(period) || 0) + 1
+        daysIn.set(period, n)
+        if (n === minDays) qualifiedOn.set(period, date)
       }
-      const { longest, reachedAt } = longestRun(qualifiedOn.keys(), target, k => nextPeriodKey(k, condition.period))
-      return result(reachedAt == null ? null : qualifiedOn.get(reachedAt), longest, target)
+      const periods = [...qualifiedOn.keys()]
+      const { longest, reachedAt } = longestRun(periods, target)
+      return result(reachedAt < 0 ? null : qualifiedOn.get(periods[reachedAt]), longest, target)
     }
 
     case 'cumulative': {
@@ -367,7 +378,7 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       for (const record of records) {
         const value = valueOf(record, condition.unit)
         if (value == null) continue
-        const key = periodKey(record.date, period)
+        const key = periodIndex(record.date, period)
         const total = (totals.get(key) || 0) + value
         totals.set(key, total)
         if (total > best) best = total
