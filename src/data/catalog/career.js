@@ -6,11 +6,11 @@ export default [
   // ── 커리어 전체 ───────────────────────────────────────────────────────────
   define('ach-career-003', 'cat-career', 'bronze', '커리어의 첫 페이지', '업무, 자격증, 네트워킹 중 무엇이든 커리어 기록을 처음 남겨 보세요.',
     action()),
-  define('ach-career-009', 'cat-career', 'silver', '첫 출근', "새 직장에 들어간 날 '입사' 태그를 붙여 기록해 보세요.",
+  define('ach-career-009', 'cat-career', 'silver', '출근이라는 정기구독', "새 직장에 들어간 날 '입사' 태그를 붙여 기록해 보세요. 월요일이 자동 갱신됩니다.",
     tag('입사')),
-  define('ach-career-001', 'cat-career', 'gold', '레벨 업', "승진한 날 '승진' 태그를 붙여 기록해 보세요.",
+  define('ach-career-001', 'cat-career', 'gold', '직급 패치 완료', "승진한 날 '승진' 태그를 붙여 기록해 보세요. 캐릭터 이름은 같지만 권한이 늘었어요.",
     tag('승진')),
-  define('ach-career-004', 'cat-career', 'gold', '새로운 출발', "새 회사로 옮긴 날 '이직' 태그를 붙여 기록해 보세요.",
+  define('ach-career-004', 'cat-career', 'gold', '회사 맵 이동', "새 회사로 옮긴 날 '이직' 태그를 붙여 기록해 보세요. 익숙한 단축키부터 다시 찾습니다.",
     tag('이직')),
   define('ach-career-005', 'cat-career', 'platinum', '수상의 영광', "상을 받은 날 '수상' 태그를 붙여 기록해 보세요.",
     tag('수상')),
@@ -20,15 +20,15 @@ export default [
     metaCount(10)),
 
   // ── 업무 ──────────────────────────────────────────────────────────────────
-  define('ach-work-001', 'cat-work', 'bronze', '오늘의 업무', '업무에서 해낸 일을 처음 기록해 보세요.',
+  define('ach-work-001', 'cat-work', 'bronze', '오늘도 뭔가 했다', '업무에서 해낸 일을 처음 기록해 보세요. 작은 완료도 로그에 남기면 업적입니다.',
     action()),
-  define('ach-work-002', 'cat-work', 'silver', '성실한 기록', '업무 일지를 30번 기록해 보세요.',
+  define('ach-work-002', 'cat-work', 'silver', '업무 로그 30장', '업무 일지를 30번 기록해 보세요. 기억보다 로그가 믿을 만할 때가 옵니다.',
     count(30)),
   define('ach-work-003', 'cat-work', 'gold', '100일의 업무 일지', '업무를 기록한 날을 100일 채워 보세요.',
     days(100)),
   define('ach-work-004', 'cat-work', 'gold', '주 5일 업무 일지', '12주 연속으로 한 주에 5일 이상 업무를 기록해 보세요.',
     weeks(12, 5)),
-  define('ach-work-005', 'cat-work', 'silver', '프로젝트 완료', "프로젝트를 마친 날 '프로젝트완료' 태그를 붙여 보세요.",
+  define('ach-work-005', 'cat-work', 'silver', '엔딩 크레딧: 프로젝트', "프로젝트를 마친 날 '프로젝트완료' 태그를 붙여 보세요. 다음 시즌 예고는 잠시 미뤄 둡니다.",
     tag('프로젝트완료')),
   define('ach-work-006', 'cat-work', 'platinum', '프로젝트 10개', "'프로젝트완료' 태그를 붙인 기록을 10번 남겨 보세요.",
     tagCount('프로젝트완료', 10)),
@@ -40,7 +40,7 @@ export default [
     tagCount('칼퇴', 20)),
 
   // ── 자격증 ────────────────────────────────────────────────────────────────
-  define('ach-career-002', 'cat-certificates', 'gold', '자격증 취득', '첫 자격증을 기록해 보세요. 합격한 날 기록하면 돼요.',
+  define('ach-career-002', 'cat-certificates', 'gold', '종이 한 장의 전투력', '첫 자격증을 기록해 보세요. 한 장이지만 이력서에서는 제법 무겁습니다.',
     action()),
   define('ach-cert-001', 'cat-certificates', 'platinum', '자격증 부자', '자격증 3개를 기록해 보세요.',
     count(3)),
@@ -60,7 +60,7 @@ export default [
     tag('기술사')),
 
   // ── 네트워킹 (명) ──────────────────────────────────────────────────────────
-  define('ach-network-001', 'cat-networking', 'bronze', '첫 만남', '일로 만난 사람과의 교류를 처음 기록해 보세요.',
+  define('ach-network-001', 'cat-networking', 'bronze', '명함보다 먼저 인사', '일로 만난 사람과의 교류를 처음 기록해 보세요. 네트워크의 첫 노드입니다.',
     action()),
   define('ach-network-002', 'cat-networking', 'silver', '인맥 10명', "새로 알게 된 사람 수를 '명' 단위로 기록해 합쳐서 10명을 채워 보세요.",
     total(10, '명')),
