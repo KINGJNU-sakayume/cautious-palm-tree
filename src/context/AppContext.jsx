@@ -76,6 +76,7 @@ function reducer(state, action) {
       const categoryDefaults = { ...state.prefs.categoryDefaults }
       removed.forEach(id => delete categoryDefaults[id])
       return {
+        ...state,
         categories: state.categories.filter(c => !removed.has(c.id)),
         // Records move up to the deleted category's parent (or become uncategorised).
         records: state.records.map(r => (removed.has(r.categoryId) ? { ...r, categoryId: target.parentId ?? null } : r)),
