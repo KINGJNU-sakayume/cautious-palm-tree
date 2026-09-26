@@ -100,4 +100,41 @@ export const categories = [
   { id: 'cat-home', name: '생활', parentId: null },
   { id: 'cat-cleaning', name: '청소·정리', parentId: 'cat-home' },
   { id: 'cat-pets', name: '반려동물', parentId: 'cat-home' },
+
+  // 인생 챕터
+  { id: 'cat-life-milestones', name: '인생 챕터', parentId: null },
+  { id: 'cat-age-milestones', name: '나이·생일', parentId: 'cat-life-milestones' },
+  { id: 'cat-education-milestones', name: '학업·졸업', parentId: 'cat-life-milestones' },
+  { id: 'cat-military-milestones', name: '군복무', parentId: 'cat-life-milestones' },
+  { id: 'cat-career-milestones', name: '취업·직장 이정표', parentId: 'cat-life-milestones' },
+  { id: 'cat-home-milestones', name: '독립·주거', parentId: 'cat-life-milestones' },
+  { id: 'cat-relationship-milestones', name: '연애·결혼', parentId: 'cat-life-milestones' },
+  { id: 'cat-family-milestones', name: '가족·세대', parentId: 'cat-life-milestones' },
+  { id: 'cat-money-milestones', name: '돈·재정 이정표', parentId: 'cat-life-milestones' },
+
+  // 경험치
+  { id: 'cat-experience-points', name: '경험치', parentId: null },
+  { id: 'cat-food-experiences', name: '음식·미식', parentId: 'cat-experience-points' },
+  { id: 'cat-travel-experiences', name: '여행·모험', parentId: 'cat-experience-points' },
+  { id: 'cat-culture-experiences', name: '문화·관람', parentId: 'cat-experience-points' },
+  { id: 'cat-hobby-experiences', name: '취미·덕질', parentId: 'cat-experience-points' },
+  { id: 'cat-social-experiences', name: '인간관계·모임', parentId: 'cat-experience-points' },
+  { id: 'cat-digital-experiences', name: '디지털 생활', parentId: 'cat-experience-points' },
+  { id: 'cat-civic-experiences', name: '사회생활·행정', parentId: 'cat-experience-points' },
+  { id: 'cat-mobility-experiences', name: '운전·교통', parentId: 'cat-experience-points' },
+
+  // 사건사고
+  { id: 'cat-chaos-events', name: '사건사고', parentId: null },
+  { id: 'cat-luck-events', name: '운빨', parentId: 'cat-chaos-events' },
+  { id: 'cat-mishap-events', name: '흑역사·실수', parentId: 'cat-chaos-events' },
+  { id: 'cat-survival-events', name: '위기탈출', parentId: 'cat-chaos-events' },
+  { id: 'cat-weird-events', name: '뜻밖의 경험', parentId: 'cat-chaos-events' },
+
+  // 전설 난이도
+  { id: 'cat-legendary-life', name: '전설 난이도', parentId: null },
+  { id: 'cat-power-fame', name: '권력·유명세', parentId: 'cat-legendary-life' },
+  { id: 'cat-business-wealth', name: '사업·부', parentId: 'cat-legendary-life' },
+  { id: 'cat-world-feats', name: '세계급 기록·수상', parentId: 'cat-legendary-life' },
+  { id: 'cat-space-impossible', name: '우주·거의 불가능', parentId: 'cat-legendary-life' },
+
 ]
