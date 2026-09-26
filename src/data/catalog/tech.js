@@ -6,7 +6,7 @@ const PROBLEM_TYPES = ['구현', '그리디', 'DP', 'BFS', 'DFS', '이분탐색'
 
 export default [
   // ── 기술 전체 ─────────────────────────────────────────────────────────────
-  define('ach-tech-001', 'cat-tech', 'gold', '개발 100일', '코딩이나 알고리즘을 기록한 날을 100일 채워 보세요.',
+  define('ach-tech-001', 'cat-tech', 'gold', '100일째 키보드 노동', '코딩이나 알고리즘을 기록한 날을 100일 채워 보세요. 키보드가 동료로 승격됩니다.',
     days(100)),
   define('ach-tech-002', 'cat-tech', 'gold', '테크 러버', '기술 업적 10개를 달성해 보세요.',
     metaCount(10)),
@@ -14,11 +14,11 @@ export default [
   // ── 코딩 (시간) ────────────────────────────────────────────────────────────
   define('ach-coding-001', 'cat-coding', 'bronze', 'Hello, World!', '첫 코딩을 기록해 보세요.',
     action()),
-  define('ach-coding-004', 'cat-coding', 'silver', '일주일 코딩', '7일 연속으로 코딩해 보세요.',
+  define('ach-coding-004', 'cat-coding', 'silver', '7일 연속 세미콜론', '7일 연속으로 코딩해 보세요. 언어에 따라 세미콜론은 없어도 됩니다.',
     streak(7)),
   define('ach-coding-002', 'cat-coding', 'gold', '1일 1커밋', '30일 연속으로 코딩을 기록해 보세요.',
     streak(30)),
-  define('ach-coding-005', 'cat-coding', 'platinum', '100일 연속 코딩', '100일 연속으로 코딩해 보세요.',
+  define('ach-coding-005', 'cat-coding', 'platinum', '백일 코딩 잔치', '100일 연속으로 코딩해 보세요. 떡 대신 커밋을 돌립니다.',
     streak(100)),
   define('ach-coding-006', 'cat-coding', 'diamond', '365일 잔디', '365일 연속으로 코딩했어요. 잔디가 빈틈없이 채워졌어요.',
     streak(365)),
@@ -32,7 +32,7 @@ export default [
     tagCount('리팩터링', 10)),
   define('ach-coding-014', 'cat-coding', 'silver', '버그 사냥꾼', "까다로운 버그를 잡은 날 '디버깅' 태그를 붙여 10번 기록해 보세요.",
     tagCount('디버깅', 10)),
-  define('ach-coding-003', 'cat-coding', 'gold', '첫 출시', "만든 것을 세상에 내놓은 날 '출시' 태그를 붙여 기록해 보세요.",
+  define('ach-coding-003', 'cat-coding', 'gold', '배포 버튼은 실제였다', "만든 것을 세상에 내놓은 날 '출시' 태그를 붙여 기록해 보세요. localhost 밖의 공기는 다릅니다.",
     tag('출시')),
   define('ach-coding-012', 'cat-coding', 'platinum', '연쇄 출시범', "'출시' 태그를 붙인 기록을 5번 남겨 보세요.",
     tagCount('출시', 5)),
@@ -44,9 +44,9 @@ export default [
     tagSet(['프론트엔드', '백엔드', '데이터베이스', '배포'])),
 
   // ── 알고리즘 (문제) ────────────────────────────────────────────────────────
-  define('ach-algo-001', 'cat-algorithms', 'bronze', '첫 문제', '알고리즘 문제를 처음 풀고 기록해 보세요.',
+  define('ach-algo-001', 'cat-algorithms', 'bronze', '첫 오답도 정답의 일부', '알고리즘 문제를 처음 풀고 기록해 보세요. 틀린 제출도 경로 탐색입니다.',
     action()),
-  define('ach-algo-002', 'cat-algorithms', 'silver', '문제 풀이 입문', '푼 문제를 합쳐 10문제를 채워 보세요.',
+  define('ach-algo-002', 'cat-algorithms', 'silver', '열 문제쯤은 몸풀기', '푼 문제를 합쳐 10문제를 채워 보세요. 이제 입력 예제를 의심하기 시작합니다.',
     total(10, '문제')),
   define('ach-algo-003', 'cat-algorithms', 'gold', '백 문제 돌파', '푼 문제를 합쳐 100문제를 채워 보세요.',
     total(100, '문제')),
@@ -64,7 +64,7 @@ export default [
     count(20)),
   define('ach-algo-009', 'cat-algorithms', 'platinum', '알고리즘 유형 정복', '구현·그리디·DP·BFS·DFS·이분탐색·정렬 문제를 모두 풀고 유형을 태그로 남겨 보세요.',
     tagSet(PROBLEM_TYPES)),
-  define('ach-algo-010', 'cat-algorithms', 'silver', '코딩 테스트', "코딩 테스트를 보고 '코딩테스트' 태그를 붙여 보세요.",
+  define('ach-algo-010', 'cat-algorithms', 'silver', '시간복잡도 면접', "코딩 테스트를 보고 '코딩테스트' 태그를 붙여 보세요. 시계가 평소보다 빠르게 갑니다.",
     tag('코딩테스트')),
   define('ach-algo-011', 'cat-algorithms', 'gold', '알고리즘 대회', "알고리즘 대회에 참가하고 '대회' 태그를 붙여 보세요.",
     tag('대회')),
