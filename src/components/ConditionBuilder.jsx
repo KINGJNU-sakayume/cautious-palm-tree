@@ -51,6 +51,9 @@ const STREAK_PERIODS = [
   { value: 'month', label: '매달', unit: '개월' },
 ]
 
+// The achievement checklist renders this many rows; search narrows the rest.
+const CHECKLIST_LIMIT = 60
+
 const UNIT_TYPES = ['cumulative', 'single', 'daily_cumulative', 'period_cumulative', 'cross_category_cumulative']
 
 /** A fresh condition of `type`, keeping the unit when it still makes sense. */
@@ -417,6 +420,11 @@ function AchievementChecklist({ condition: c, onChange, selfId }) {
       .filter(a => a.id !== selfId)
       .filter(a => !q || a.title.toLowerCase().includes(q) || (a.categoryId && getCategoryPathLabel(a.categoryId, categories).toLowerCase().includes(q)))
   }, [achievements, categories, query, selfId])
+  // A long list shows its start, plus anything already chosen further down.
+  const shown = useMemo(
+    () => [...options.slice(0, CHECKLIST_LIMIT), ...options.slice(CHECKLIST_LIMIT).filter(a => selected.includes(a.id))],
+    [options, selected],
+  )
 
   const toggle = (id) => onChange({ ...c, achievementIds: selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id] })
 
@@ -436,7 +444,7 @@ function AchievementChecklist({ condition: c, onChange, selfId }) {
           />
         </div>
         <ul className="max-h-60 overflow-y-auto overscroll-contain scrollbar-thin p-1">
-          {options.map(a => {
+          {shown.map(a => {
             const isOn = selected.includes(a.id)
             return (
               <li key={a.id}>
@@ -461,6 +469,11 @@ function AchievementChecklist({ condition: c, onChange, selfId }) {
             )
           })}
           {options.length === 0 && <li className="px-3 py-4 text-center text-sm text-ink-3">맞는 업적이 없어요.</li>}
+          {options.length > shown.length && (
+            <li className="px-3 py-3 text-center text-sm text-ink-3">
+              {options.length - shown.length}개 더 있어요. 이름이나 카테고리로 찾아 보세요.
+            </li>
+          )}
         </ul>
       </div>
     </div>

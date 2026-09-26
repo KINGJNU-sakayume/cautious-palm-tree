@@ -13,7 +13,7 @@ import { addDays, isValidDateStr, todayStr } from '@/utils/dates.js'
 import { getDirectChildren } from '@/utils/categoryTree.js'
 import { imageFileToDataUrl } from '@/utils/image.js'
 import { achievementUnits, recentUnits, suggestTags } from '@/utils/suggestions.js'
-import { evaluateAchievements, normalizeTag } from '@/utils/achievementEvaluator.js'
+import { evaluateAchievements, isMetaCondition, normalizeTag } from '@/utils/achievementEvaluator.js'
 import { hasMeasurableProgress, progressLabel, progressRatio } from '@/utils/achievementText.js'
 import { canConvert, parseValueInput } from '@/utils/units.js'
 import { AlertIcon, ImageIcon, PlusIcon, TrashIcon, XIcon } from './Icons.jsx'
@@ -90,7 +90,8 @@ function useImpact({ form, record, records, achievements, categories }) {
       if (!r || r.error) continue
       if (r.earned && !a.isEarned) gained.push(a)
       else if (!r.earned && a.isEarned) lost.push(a)
-      else if (!r.earned && !a.isHidden && hasMeasurableProgress(a.condition) && r.progress > a.progress) {
+      // Only goals this record itself moves; achievements about other achievements would crowd them out.
+      else if (!r.earned && !a.isHidden && !isMetaCondition(a.condition) && hasMeasurableProgress(a.condition) && r.progress > a.progress) {
         closer.push({ ...a, progress: r.progress, target: r.target })
       }
     }
@@ -100,7 +101,7 @@ function useImpact({ form, record, records, achievements, categories }) {
   }, [deferredKey, record, records, achievements, categories])
 }
 
-function ImpactList({ title, tone = 'accent', items, render }) {
+function ImpactList({ title, tone = 'accent', items, render, showRest = true }) {
   if (items.length === 0) return null
   const rest = items.length - IMPACT_PREVIEW
   return (
@@ -109,7 +110,7 @@ function ImpactList({ title, tone = 'accent', items, render }) {
       <ul className="space-y-1.5">
         {items.slice(0, IMPACT_PREVIEW).map(render)}
       </ul>
-      {rest > 0 && <p className="mt-1 text-xs text-ink-3">외 {rest}개</p>}
+      {showRest && rest > 0 && <p className="mt-1 text-xs text-ink-3">외 {rest}개</p>}
     </div>
   )
 }
@@ -147,6 +148,7 @@ function ImpactPreview({ impact, isEditing }) {
       <ImpactList
         title="가까워지는 업적"
         items={closer}
+        showRest={false}
         render={a => (
           <li key={a.id} className="flex items-center gap-2.5">
             <Medal tier={a.tier} size={24} />
