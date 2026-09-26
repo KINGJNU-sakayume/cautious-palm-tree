@@ -11,7 +11,7 @@ import {
 } from '@/utils/formatters.js'
 
 const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary']
-const TYPES = ['one-time', 'repeatable', 'meta']
+const TYPES = ['one-time', 'meta']
 
 // Condition types that support enumerable progress templates
 const ENUMERABLE_TYPES = [
@@ -29,7 +29,7 @@ function blankAchievement() {
     type: 'one-time',
     isHidden: false,
     condition: { type: 'action' },
-    rarity: 50,
+    rarity: null,
     isEarned: false,
     earnedAt: null,
     progress: 0,
@@ -438,12 +438,12 @@ export default function AchievementManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center gap-1 mb-1.5">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">획득률</label>
-                    <span className="text-[10px] text-slate-400">전체 사용자 기준</span>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">희귀도 점수</label>
+                    <span className="text-[10px] text-slate-400">선택 · 수동 입력</span>
                     <div className="relative group/tooltip">
                       <span className="text-slate-400 cursor-help text-xs select-none">ⓘ</span>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-52 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-opacity z-20 text-center shadow-lg">
-                        이 업적을 획득한 사용자의 비율입니다. 낮을수록 희귀한 업적입니다.
+                        개인용 앱에서는 실제 전체 사용자 획득률을 계산할 수 없습니다. 필요할 때만 0~100 범위의 참고 점수를 직접 입력하세요.
                       </div>
                     </div>
                   </div>
@@ -453,11 +453,14 @@ export default function AchievementManagement() {
                       min={0}
                       max={100}
                       step="0.1"
-                      value={editForm.rarity}
-                      onChange={e => setEditForm({ ...editForm, rarity: Number(e.target.value) })}
+                      value={editForm.rarity ?? ''}
+                      onChange={e => setEditForm({
+                        ...editForm,
+                        rarity: e.target.value === '' ? null : Number(e.target.value),
+                      })}
                       className="w-full px-3 py-2 pr-7 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">%</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">점</span>
                   </div>
                 </div>
                 <div className="flex flex-col justify-center">
