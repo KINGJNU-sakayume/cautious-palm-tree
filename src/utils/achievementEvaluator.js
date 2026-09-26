@@ -62,6 +62,34 @@ function prevDateStr(dateStr) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function categoryInScope(categoryId, rootCategoryId, categories = []) {
+  if (categoryId === rootCategoryId) return true
+  if (!categoryId || !rootCategoryId || categories.length === 0) return false
+
+  const byId = new Map(categories.map(c => [c.id, c]))
+  let currentId = categoryId
+  const seen = new Set()
+
+  while (currentId && !seen.has(currentId)) {
+    if (currentId === rootCategoryId) return true
+    seen.add(currentId)
+    currentId = byId.get(currentId)?.parentId ?? null
+  }
+  return false
+}
+
+function aggregateSource(allRecords, source) {
+  const sourceRecords = allRecords.filter(r => r.categoryId === source.categoryId)
+  if (sourceRecords.length === 0) return 0
+  if (source.aggregation === 'max') return Math.max(...sourceRecords.map(r => r.value || 0))
+  if (source.aggregation === 'sum') return sourceRecords.reduce((sum, r) => sum + (r.value || 0), 0)
+  if (source.aggregation === 'last') {
+    const latest = [...sourceRecords].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]
+    return latest?.value || 0
+  }
+  return 0
+}
+
 function calcStreak(dateset) {
   const today = todayLocalStr()
   const yesterday = prevDateStr(today)
@@ -128,6 +156,14 @@ export function evaluateCondition(condition, records, newRecord) {
       return false
     }
 
+    case 'cross_category_cumulative': {
+      const total = (condition.sources || []).reduce(
+        (sum, source) => sum + aggregateSource(records, source),
+        0
+      )
+      return total >= condition.target
+    }
+
     /**
      * tag_match: at least one record in this category contains the specified tag.
      * condition shape: { type: 'tag_match', tag: string }
@@ -175,13 +211,13 @@ export function evaluateCondition(condition, records, newRecord) {
 export function evaluateAchievements(newRecord, allRecords, allAchievements) {
   // Group 1: achievements tied to this specific category
   const categoryCandidates = allAchievements.filter(
-    a => a.categoryId === newRecord.categoryId && !a.isEarned && a.type !== 'meta'
+    a => a.categoryId === newRecord.categoryId && !a.isEarned && a.type !== 'meta' && !a._softDeleted
   )
 
   // Group 2: cross-category achievements (categoryId is null/undefined)
   // Re-evaluated on every record save regardless of category
   const crossCandidates = allAchievements.filter(
-    a => !a.categoryId && !a.isEarned && a.type !== 'meta'
+    a => !a.categoryId && !a.isEarned && a.type !== 'meta' && !a._softDeleted
   )
 
   const unlocked = []
@@ -203,8 +239,10 @@ export function evaluateAchievements(newRecord, allRecords, allAchievements) {
  * @param {AchievementRecord[]} allRecords - all records (needed for cross_category_cumulative)
  * @returns {string[]} IDs of meta achievements newly unlocked
  */
-export function evaluateMetaAchievements(allAchievements, allRecords = []) {
-  const metaCandidates = allAchievements.filter(a => a.type === 'meta' && !a.isEarned)
+export function evaluateMetaAchievements(allAchievements, allRecords = [], allCategories = []) {
+  const metaCandidates = allAchievements.filter(
+    a => a.type === 'meta' && !a.isEarned && !a._softDeleted
+  )
   const unlocked = []
 
   for (const meta of metaCandidates) {
@@ -214,7 +252,11 @@ export function evaluateMetaAchievements(allAchievements, allRecords = []) {
     switch (cond.type) {
       case 'meta_count': {
         const count = allAchievements.filter(
-          a => a.categoryId === cond.categoryId && a.isEarned && a.type !== 'meta'
+          a =>
+            categoryInScope(a.categoryId, cond.categoryId, allCategories) &&
+            a.isEarned &&
+            a.type !== 'meta' &&
+            !a._softDeleted
         ).length
         fulfilled = count >= cond.target
         break
@@ -222,27 +264,25 @@ export function evaluateMetaAchievements(allAchievements, allRecords = []) {
       case 'meta_list': {
         fulfilled = cond.achievementIds.every(id => {
           const a = allAchievements.find(x => x.id === id)
-          return a && a.isEarned && a.type !== 'meta'
+          return a && a.isEarned && a.type !== 'meta' && !a._softDeleted
         })
         break
       }
       case 'meta_clear': {
         const categoryAchievements = allAchievements.filter(
-          a => a.categoryId === cond.categoryId && a.type !== 'meta'
+          a =>
+            categoryInScope(a.categoryId, cond.categoryId, allCategories) &&
+            a.type !== 'meta' &&
+            !a._softDeleted
         )
         fulfilled = categoryAchievements.length > 0 && categoryAchievements.every(a => a.isEarned)
         break
       }
       case 'cross_category_cumulative': {
-        const total = (cond.sources || []).reduce((sum, src) => {
-          const srcRecords = allRecords.filter(r => r.categoryId === src.categoryId)
-          if (!srcRecords.length) return sum
-          let val = 0
-          if (src.aggregation === 'max')  val = Math.max(...srcRecords.map(r => r.value || 0))
-          if (src.aggregation === 'last') val = srcRecords[srcRecords.length - 1]?.value || 0
-          if (src.aggregation === 'sum')  val = srcRecords.reduce((s, r) => s + (r.value || 0), 0)
-          return sum + val
-        }, 0)
+        const total = (cond.sources || []).reduce(
+          (sum, source) => sum + aggregateSource(allRecords, source),
+          0
+        )
         fulfilled = total >= cond.target
         break
       }
@@ -271,14 +311,10 @@ export function computeProgressFull(achievement, allRecords) {
 
   // cross_category_cumulative has no categoryId — handle before filtering
   if (condition.type === 'cross_category_cumulative') {
-    const progress = (condition.sources || []).reduce((sum, src) => {
-      const srcRecords = allRecords.filter(r => r.categoryId === src.categoryId)
-      if (!srcRecords.length) return sum
-      if (src.aggregation === 'max')  return sum + Math.max(...srcRecords.map(r => r.value || 0))
-      if (src.aggregation === 'last') return sum + (srcRecords[srcRecords.length - 1]?.value || 0)
-      if (src.aggregation === 'sum')  return sum + srcRecords.reduce((s, r) => s + (r.value || 0), 0)
-      return sum
-    }, 0)
+    const progress = (condition.sources || []).reduce(
+      (sum, source) => sum + aggregateSource(allRecords, source),
+      0
+    )
     return { progress, completedTags: null }
   }
 
@@ -337,21 +373,15 @@ export function computeProgressFull(achievement, allRecords) {
       )
       if (subResults.length === 0) return { progress: 0, completedTags: null }
 
-      const getRatio = (sub, result) => result.progress / (sub.target || 1)
+      const ratios = subResults.map((result, index) => {
+        const target = condition.conditions[index]?.target || 1
+        return Math.max(0, Math.min(1, result.progress / target))
+      })
+      const ratio = condition.operator === 'OR'
+        ? Math.max(...ratios)
+        : Math.min(...ratios)
 
-      let chosen
-      if (condition.operator === 'AND') {
-        chosen = subResults.reduce((min, r, i) =>
-          getRatio(condition.conditions[i], r) < getRatio(condition.conditions[min.i], subResults[min.i])
-            ? { i, r } : min
-        , { i: 0, r: subResults[0] })
-      } else {
-        chosen = subResults.reduce((max, r, i) =>
-          getRatio(condition.conditions[i], r) > getRatio(condition.conditions[max.i], subResults[max.i])
-            ? { i, r } : max
-        , { i: 0, r: subResults[0] })
-      }
-      return { progress: chosen.r.progress, completedTags: null }
+      return { progress: Math.round(ratio * 100), completedTags: null }
     }
 
     default:
