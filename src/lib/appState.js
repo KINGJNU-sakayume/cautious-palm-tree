@@ -87,6 +87,25 @@ export function normalizeTags(tags) {
   return out
 }
 
+/**
+ * A record as the record form saves it. The value is a number (or empty);
+ * a unit without a value means nothing, so it is dropped.
+ */
+export function recordFromInput(input) {
+  const raw = input.value === '' || input.value == null ? null : Number(String(input.value).replace(/,/g, ''))
+  const value = Number.isFinite(raw) ? raw : null
+  return {
+    id: input.id || generateId('rec'),
+    categoryId: input.categoryId ?? null,
+    date: input.date,
+    value,
+    unit: value != null ? optionalText(input.unit) : null,
+    memo: optionalText(input.memo),
+    photoUrl: optionalText(input.photoUrl),
+    tags: normalizeTags(input.tags),
+  }
+}
+
 function normalizeRecord(r, categoryIds) {
   const value = r.value === '' || r.value == null ? null : Number(r.value)
   return {

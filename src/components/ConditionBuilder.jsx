@@ -3,20 +3,25 @@ import CategoryPicker from './CategoryPicker.jsx'
 import Medal from './Medal.jsx'
 import TagInput from './TagInput.jsx'
 import { useApp } from '@/context/AppContext.jsx'
-import { COMPOSABLE_CONDITION_TYPES, isMetaCondition } from '@/utils/achievementEvaluator.js'
+import { TIERS } from '@/constants/tiers.js'
+import { COMPOSABLE_CONDITION_TYPES, hasMinimum, isMetaCondition } from '@/utils/achievementEvaluator.js'
 import { getCategoryPathLabel } from '@/utils/categoryTree.js'
 import { CheckIcon, PlusIcon, SearchIcon, XIcon } from './Icons.jsx'
 
 const RECORD_TYPES = [
   { value: 'action', label: '첫 기록 남기기' },
   { value: 'count', label: '기록 횟수 채우기' },
+  { value: 'days', label: '기록한 날 수 채우기' },
+  { value: 'streak', label: '며칠 연속 기록하기' },
+  { value: 'period_streak', label: '매주·매달 꾸준히 기록하기' },
   { value: 'cumulative', label: '값을 모두 더해 목표 채우기' },
   { value: 'single', label: '한 번에 목표 넘기기' },
   { value: 'daily_cumulative', label: '하루 합계로 목표 넘기기' },
-  { value: 'streak', label: '며칠 연속 기록하기' },
+  { value: 'period_cumulative', label: '한 주·한 달·한 해 합계로 목표 넘기기' },
   { value: 'tag_match', label: '특정 태그로 기록하기' },
   { value: 'tag_count', label: '특정 태그로 여러 번 기록하기' },
   { value: 'tag_set_complete', label: '태그 목록 모두 모으기' },
+  { value: 'category_count', label: '여러 카테고리에 기록하기' },
   { value: 'cross_category_cumulative', label: '여러 카테고리 합산하기' },
   { value: 'composite', label: '여러 조건 함께 채우기' },
 ]
@@ -35,20 +40,35 @@ const AGGREGATIONS = [
   { value: 'last', label: '가장 최근 기록' },
 ]
 
-const UNIT_TYPES = ['cumulative', 'single', 'daily_cumulative', 'cross_category_cumulative']
+const SUM_PERIODS = [
+  { value: 'week', label: '한 주' },
+  { value: 'month', label: '한 달' },
+  { value: 'year', label: '한 해' },
+]
+
+const STREAK_PERIODS = [
+  { value: 'week', label: '매주', unit: '주' },
+  { value: 'month', label: '매달', unit: '개월' },
+]
+
+const UNIT_TYPES = ['cumulative', 'single', 'daily_cumulative', 'period_cumulative', 'cross_category_cumulative']
 
 /** A fresh condition of `type`, keeping the unit when it still makes sense. */
 export function defaultCondition(type, previous = null) {
   const unit = UNIT_TYPES.includes(type) && previous?.unit ? previous.unit : ''
   switch (type) {
     case 'count': return { type, target: 10 }
+    case 'days': return { type, target: 30 }
     case 'cumulative': return { type, target: 100, unit }
     case 'single': return { type, target: 10, unit }
     case 'daily_cumulative': return { type, target: 2, unit }
+    case 'period_cumulative': return { type, period: 'month', target: 100, unit }
     case 'streak': return { type, target: 7 }
+    case 'period_streak': return { type, period: 'week', target: 4, minDays: 3 }
     case 'tag_match': return { type, tag: '' }
     case 'tag_count': return { type, tag: '', target: 5 }
     case 'tag_set_complete': return { type, tags: [] }
+    case 'category_count': return { type, target: 3 }
     case 'cross_category_cumulative':
       return { type, sources: [{ categoryId: null, aggregation: 'max' }, { categoryId: null, aggregation: 'max' }], target: 100, unit }
     case 'composite':
@@ -94,19 +114,55 @@ function Hint({ children }) {
 
 // ── Record-based fields ──────────────────────────────────────────────────────
 
-function RecordConditionFields({ condition: c, onChange }) {
-  const set = (patch) => onChange({ ...c, ...patch })
-  const unitInput = (
+function UnitInput({ value, onChange, label = '단위' }) {
+  return (
     <input
       type="text"
-      value={c.unit ?? ''}
-      onChange={e => set({ unit: e.target.value })}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value)}
       placeholder="단위"
-      aria-label="단위"
+      aria-label={label}
       className="input w-24"
       autoComplete="off"
     />
   )
+}
+
+/**
+ * Optional threshold for count / days / streak. `daily`: compare each day's
+ * total (days, streak) instead of each record (count).
+ */
+function MinimumFields({ condition: c, onChange, daily }) {
+  const on = hasMinimum(c)
+  const toggle = () => {
+    if (on) {
+      const { minValue: _minValue, unit: _unit, ...rest } = c
+      onChange(rest)
+    } else {
+      onChange({ ...c, minValue: '', unit: c.unit ?? '' })
+    }
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer select-none w-fit">
+        <input type="checkbox" checked={on} onChange={toggle} className="w-4 h-4 accent-accent" />
+        {daily ? '하루 합계가 기준 이상인 날만 세기' : '값이 기준 이상인 기록만 세기'}
+      </label>
+      {on && (
+        <Row>
+          {daily ? '하루에' : '기록 하나가'}
+          <NumberField value={c.minValue} onChange={minValue => onChange({ ...c, minValue })} aria-label="기준 값" />
+          <UnitInput value={c.unit} onChange={unit => onChange({ ...c, unit })} label="기준 값 단위" />
+          이상
+        </Row>
+      )}
+    </div>
+  )
+}
+
+function RecordConditionFields({ condition: c, onChange }) {
+  const set = (patch) => onChange({ ...c, ...patch })
+  const unitInput = <UnitInput value={c.unit} onChange={unit => set({ unit })} />
 
   switch (c.type) {
     case 'action':
@@ -114,10 +170,45 @@ function RecordConditionFields({ condition: c, onChange }) {
 
     case 'count':
       return (
-        <Row>
-          기록 <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="목표 횟수" /> 회
-        </Row>
+        <>
+          <Row>
+            기록 <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="목표 횟수" /> 회
+          </Row>
+          <MinimumFields condition={c} onChange={onChange} />
+        </>
       )
+
+    case 'days':
+      return (
+        <>
+          <Row>
+            기록한 날 <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="목표 일수" /> 일
+          </Row>
+          <Hint>하루에 여러 번 기록해도 하루로 세요. 연속이 아니어도 돼요.</Hint>
+          <MinimumFields condition={c} onChange={onChange} daily />
+        </>
+      )
+
+    case 'period_streak': {
+      const period = STREAK_PERIODS.find(p => p.value === c.period) ?? STREAK_PERIODS[0]
+      return (
+        <>
+          <Row>
+            <select className="input w-24" value={period.value} onChange={e => set({ period: e.target.value })} aria-label="기간">
+              {STREAK_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+            <NumberField integer value={c.minDays ?? 1} onChange={minDays => set({ minDays })} className="w-20" aria-label="기간마다 기록할 날 수" />
+            일 이상 기록하기를
+            <NumberField integer value={c.target} onChange={target => set({ target })} className="w-20" aria-label="연속 기간" />
+            {period.unit} 연속
+          </Row>
+          <Hint>
+            {period.value === 'week' ? '한 주는 월요일부터 일요일까지예요. ' : ''}
+            예: {period.value === 'week' ? '주 3일 이상 운동하기를 12주 연속' : '매달 1일 이상 투자하기를 12개월 연속'}.
+          </Hint>
+        </>
+      )
+    }
 
     case 'cumulative':
       return (
@@ -149,6 +240,19 @@ function RecordConditionFields({ condition: c, onChange }) {
         </>
       )
 
+    case 'period_cumulative':
+      return (
+        <>
+          <Row>
+            <select className="input w-24" value={c.period ?? 'month'} onChange={e => set({ period: e.target.value })} aria-label="기간">
+              {SUM_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+            동안 모두 더해서 <NumberField value={c.target} onChange={target => set({ target })} aria-label="목표 값" /> {unitInput} 이상
+          </Row>
+          <Hint>달력의 한 주(월~일), 한 달, 한 해 안에서 더한 값을 비교해요. 예: 한 달에 100km 달리기.</Hint>
+        </>
+      )
+
     case 'streak':
       return (
         <>
@@ -156,6 +260,7 @@ function RecordConditionFields({ condition: c, onChange }) {
             <NumberField integer value={c.target} onChange={target => set({ target })} aria-label="연속 일수" /> 일 연속
           </Row>
           <Hint>지나간 날짜로 남긴 기록도 포함해서, 가장 길게 이어진 기간을 봐요.</Hint>
+          <MinimumFields condition={c} onChange={onChange} daily />
         </>
       )
 
@@ -181,6 +286,16 @@ function RecordConditionFields({ condition: c, onChange }) {
         <>
           <TagInput value={c.tags || []} onChange={tags => set({ tags })} placeholder="태그를 입력하고 Enter (쉼표로 여러 개 붙여넣기)" ariaLabel="모을 태그" />
           <Hint>{(c.tags || []).length}개 태그가 모두 한 번 이상 기록되면 달성해요. 기록할 때 추천 태그로 보여 줘요.</Hint>
+        </>
+      )
+
+    case 'category_count':
+      return (
+        <>
+          <Row>
+            서로 다른 카테고리 <NumberField integer value={c.target} onChange={target => set({ target })} className="w-20" aria-label="카테고리 수" /> 곳에 기록
+          </Row>
+          <Hint>업적에 카테고리가 있으면 그 하위 카테고리를 세고, 없으면 모든 카테고리를 세요. 나중에 만든 카테고리도 포함돼요.</Hint>
         </>
       )
 
@@ -360,6 +475,20 @@ function MetaConditionFields({ condition: c, onChange, selfId, categoryId }) {
       return (
         <>
           <Row>
+            <select
+              className="input w-36"
+              value={c.minTier ?? ''}
+              onChange={e => {
+                const { minTier: _minTier, ...rest } = c
+                onChange(e.target.value ? { ...rest, minTier: e.target.value } : rest)
+              }}
+              aria-label="셀 업적 등급"
+            >
+              <option value="">모든 등급</option>
+              {TIERS.slice(1).map(t => (
+                <option key={t.id} value={t.id}>{t.id === 'diamond' ? t.label : `${t.label} 이상`}</option>
+              ))}
+            </select>
             업적 <NumberField integer value={c.target} onChange={target => onChange({ ...c, target })} className="w-20" aria-label="목표 개수" /> 개 달성
           </Row>
           <Hint>{scope} 업적 중에서 세요(다른 업적으로 달성하는 업적은 빼고). 범위는 위에서 고른 카테고리를 따라요.</Hint>

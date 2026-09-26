@@ -14,6 +14,9 @@
  * Scope: an achievement counts the records of its category *and every
  * subcategory*. An achievement without a category counts every record.
  *
+ * Values: only values that can be expressed in the condition's unit count
+ * (see units.js), and negative values never count toward a goal.
+ *
  * @typedef {Object} AchievementResult
  * @property {boolean} earned
  * @property {string|null} earnedAt       YYYY-MM-DD
@@ -24,8 +27,9 @@
  * @property {string} [error]             set when the condition is invalid
  */
 
-import { addDays, isValidDateStr } from './dates.js'
+import { addDays, isValidDateStr, nextPeriodKey, periodKey } from './dates.js'
 import { recordValueIn } from './units.js'
+import { TIER_IDS, getTier } from '../constants/tiers.js'
 
 export const META_CONDITION_TYPES = ['meta_count', 'meta_list', 'meta_clear']
 
@@ -34,9 +38,16 @@ export const BINARY_CONDITION_TYPES = ['action', 'tag_match', 'manual']
 
 /** Record-based conditions that may be combined inside a composite. */
 export const COMPOSABLE_CONDITION_TYPES = [
-  'action', 'count', 'cumulative', 'single', 'daily_cumulative', 'streak',
-  'tag_match', 'tag_count', 'tag_set_complete', 'cross_category_cumulative',
+  'action', 'count', 'days', 'streak', 'period_streak',
+  'cumulative', 'single', 'daily_cumulative', 'period_cumulative',
+  'tag_match', 'tag_count', 'tag_set_complete', 'category_count', 'cross_category_cumulative',
 ]
+
+/** Calendar periods for period_cumulative; weeks run Monday–Sunday. */
+export const SUM_PERIODS = ['week', 'month', 'year']
+
+/** Calendar periods for period_streak. */
+export const STREAK_PERIODS = ['week', 'month']
 
 const EPSILON = 1e-9
 
@@ -49,7 +60,17 @@ export function normalizeTag(tag) {
   return String(tag ?? '').replace(/^#+/, '').replace(/\s+/g, '').toLowerCase()
 }
 
+/**
+ * count / days / streak may carry a threshold: `minValue` in `unit`.
+ * count then only counts records whose value reaches it; days and streak only
+ * count days whose values add up to it (e.g. "하루 2L 이상인 날").
+ */
+export function hasMinimum(condition) {
+  return condition?.minValue != null
+}
+
 function positiveNumber(value) {
+  if (value === '' || value == null) return null
   const n = Number(value)
   return Number.isFinite(n) && n > 0 ? n : null
 }
@@ -57,6 +78,11 @@ function positiveNumber(value) {
 function positiveInteger(value) {
   const n = positiveNumber(value)
   return n != null && Number.isInteger(n) ? n : null
+}
+
+/** Days per period a period_streak asks for (default 1). */
+export function periodMinDays(condition) {
+  return positiveInteger(condition?.minDays) ?? 1
 }
 
 function round(n) {
@@ -73,6 +99,11 @@ function minDate(dates) {
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
+function minimumError(condition) {
+  if (!hasMinimum(condition)) return null
+  return positiveNumber(condition.minValue) ? null : '기준 값을 0보다 크게 입력해 주세요.'
+}
+
 /**
  * Returns a user-facing message when the condition can't be evaluated,
  * or null when it is valid.
@@ -83,19 +114,36 @@ export function conditionError(condition, { nested = false } = {}) {
     case 'action':
       return null
     case 'count':
+      return positiveInteger(condition.target) ? minimumError(condition) : '목표 횟수를 1 이상의 정수로 입력해 주세요.'
     case 'tag_count':
-      if (condition.type === 'tag_count' && !normalizeTag(condition.tag)) return '태그를 입력해 주세요.'
+      if (!normalizeTag(condition.tag)) return '태그를 입력해 주세요.'
       return positiveInteger(condition.target) ? null : '목표 횟수를 1 이상의 정수로 입력해 주세요.'
+    case 'days':
+      return positiveInteger(condition.target) ? minimumError(condition) : '기록할 날 수를 1 이상의 정수로 입력해 주세요.'
     case 'streak':
-      return positiveInteger(condition.target) ? null : '연속 일수를 1 이상의 정수로 입력해 주세요.'
+      return positiveInteger(condition.target) ? minimumError(condition) : '연속 일수를 1 이상의 정수로 입력해 주세요.'
+    case 'period_streak': {
+      if (!STREAK_PERIODS.includes(condition.period)) return '매주인지 매달인지 골라 주세요.'
+      if (!positiveInteger(condition.target)) return '연속 기간을 1 이상의 정수로 입력해 주세요.'
+      if (condition.minDays == null) return null
+      const minDays = positiveInteger(condition.minDays)
+      if (!minDays) return '기간마다 기록할 날 수를 1 이상의 정수로 입력해 주세요.'
+      const max = condition.period === 'week' ? 7 : 31
+      return minDays <= max ? null : `${condition.period === 'week' ? '한 주' : '한 달'}에 기록할 날은 ${max}일까지 정할 수 있어요.`
+    }
     case 'cumulative':
     case 'single':
     case 'daily_cumulative':
+      return positiveNumber(condition.target) ? null : '목표 값을 0보다 크게 입력해 주세요.'
+    case 'period_cumulative':
+      if (!SUM_PERIODS.includes(condition.period)) return '기간을 골라 주세요.'
       return positiveNumber(condition.target) ? null : '목표 값을 0보다 크게 입력해 주세요.'
     case 'tag_match':
       return normalizeTag(condition.tag) ? null : '태그를 입력해 주세요.'
     case 'tag_set_complete':
       return (condition.tags || []).some(t => normalizeTag(t)) ? null : '모을 태그를 하나 이상 입력해 주세요.'
+    case 'category_count':
+      return positiveInteger(condition.target) ? null : '카테고리 수를 1 이상의 정수로 입력해 주세요.'
     case 'cross_category_cumulative':
       if (!(condition.sources || []).some(s => s?.categoryId)) return '합산할 카테고리를 하나 이상 골라 주세요.'
       return positiveNumber(condition.target) ? null : '목표 값을 0보다 크게 입력해 주세요.'
@@ -113,6 +161,7 @@ export function conditionError(condition, { nested = false } = {}) {
     case 'manual':
       return nested ? '직접 체크 조건은 다른 조건과 묶을 수 없어요.' : null
     case 'meta_count':
+      if (condition.minTier != null && !TIER_IDS.includes(condition.minTier)) return '등급을 다시 골라 주세요.'
       return positiveInteger(condition.target) ? null : '목표 개수를 1 이상의 정수로 입력해 주세요.'
     case 'meta_list':
       return (condition.achievementIds || []).length > 0 ? null : '달성해야 할 업적을 하나 이상 골라 주세요.'
@@ -179,6 +228,56 @@ function invalid(error) {
   return { earned: false, earnedAt: null, progress: 0, target: 1, error }
 }
 
+// ── Record helpers ────────────────────────────────────────────────────────────
+
+/** A record's value in `unit` when it can count toward a goal, else null. */
+function valueOf(record, unit) {
+  const value = recordValueIn(record, unit)
+  return value != null && value >= 0 ? value : null
+}
+
+function uniqueDates(records) {
+  return [...new Set(records.map(r => r.date))]
+}
+
+/**
+ * Days that count for days / streak, ascending: every day with a record, or —
+ * with a minimum — the days whose values add up to it.
+ */
+function qualifyingDates(records, condition) {
+  if (!hasMinimum(condition)) return uniqueDates(records)
+  const min = positiveNumber(condition.minValue)
+  const totals = new Map()
+  const dates = []
+  for (const record of records) {
+    const value = valueOf(record, condition.unit)
+    if (value == null) continue
+    const before = totals.get(record.date) || 0
+    const after = before + value
+    totals.set(record.date, after)
+    if (before < min - EPSILON && after >= min - EPSILON) dates.push(record.date)
+  }
+  return dates
+}
+
+/**
+ * Longest run of consecutive keys (days, weeks or months) in an ascending
+ * list, and the key at which a run first reached `target`.
+ */
+function longestRun(keys, target, next) {
+  let run = 0
+  let longest = 0
+  let reachedAt = null
+  let prev = null
+  for (const key of keys) {
+    run = prev != null && next(prev) === key ? run + 1 : 1
+    if (run > longest) longest = run
+    if (reachedAt == null && run >= target) reachedAt = key
+    prev = key
+  }
+  return { longest, reachedAt }
+}
+
 // ── Record-based conditions ───────────────────────────────────────────────────
 
 function evaluateRecordCondition(condition, scopeId, ctx) {
@@ -192,7 +291,43 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
 
     case 'count': {
       const target = positiveInteger(condition.target)
-      return result(records[target - 1]?.date, records.length, target)
+      const min = hasMinimum(condition) ? positiveNumber(condition.minValue) : null
+      const counted = min == null
+        ? records
+        : records.filter(r => {
+          const value = valueOf(r, condition.unit)
+          return value != null && value >= min - EPSILON
+        })
+      return result(counted[target - 1]?.date, counted.length, target)
+    }
+
+    case 'days': {
+      const target = positiveInteger(condition.target)
+      const dates = qualifyingDates(records, condition)
+      return result(dates[target - 1], dates.length, target)
+    }
+
+    case 'streak': {
+      // Longest run of consecutive days ever, so back-filled days count too.
+      const target = positiveInteger(condition.target)
+      const { longest, reachedAt } = longestRun(qualifyingDates(records, condition), target, d => addDays(d, 1))
+      return result(reachedAt, longest, target)
+    }
+
+    case 'period_streak': {
+      // Consecutive calendar weeks (or months) that each have `minDays` record days.
+      const target = positiveInteger(condition.target)
+      const minDays = periodMinDays(condition)
+      const daysIn = new Map()
+      const qualifiedOn = new Map() // period → the day it reached minDays
+      for (const date of uniqueDates(records)) {
+        const key = periodKey(date, condition.period)
+        const n = (daysIn.get(key) || 0) + 1
+        daysIn.set(key, n)
+        if (n === minDays) qualifiedOn.set(key, date)
+      }
+      const { longest, reachedAt } = longestRun(qualifiedOn.keys(), target, k => nextPeriodKey(k, condition.period))
+      return result(reachedAt == null ? null : qualifiedOn.get(reachedAt), longest, target)
     }
 
     case 'cumulative': {
@@ -200,7 +335,7 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       let sum = 0
       let earnedAt = null
       for (const record of records) {
-        const value = recordValueIn(record, condition.unit)
+        const value = valueOf(record, condition.unit)
         if (value == null) continue
         sum += value
         if (!earnedAt && sum >= target - EPSILON) earnedAt = record.date
@@ -213,7 +348,7 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       let best = 0
       let earnedAt = null
       for (const record of records) {
-        const value = recordValueIn(record, condition.unit)
+        const value = valueOf(record, condition.unit)
         if (value == null) continue
         if (value > best) best = value
         if (!earnedAt && value >= target - EPSILON) earnedAt = record.date
@@ -221,36 +356,24 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       return result(earnedAt, best, target)
     }
 
-    case 'daily_cumulative': {
+    case 'daily_cumulative':
+    case 'period_cumulative': {
+      // Best total within one day / week / month / year.
       const target = positiveNumber(condition.target)
-      const byDate = new Map()
+      const period = condition.type === 'daily_cumulative' ? 'day' : condition.period
+      const totals = new Map()
       let best = 0
       let earnedAt = null
       for (const record of records) {
-        const value = recordValueIn(record, condition.unit)
+        const value = valueOf(record, condition.unit)
         if (value == null) continue
-        const total = (byDate.get(record.date) || 0) + value
-        byDate.set(record.date, total)
+        const key = periodKey(record.date, period)
+        const total = (totals.get(key) || 0) + value
+        totals.set(key, total)
         if (total > best) best = total
         if (!earnedAt && total >= target - EPSILON) earnedAt = record.date
       }
       return result(earnedAt, best, target)
-    }
-
-    case 'streak': {
-      // Longest run of consecutive days ever, so back-filled days count too.
-      const target = positiveInteger(condition.target)
-      let run = 0
-      let longest = 0
-      let earnedAt = null
-      let prev = null
-      for (const date of new Set(records.map(r => r.date))) {
-        run = prev && addDays(prev, 1) === date ? run + 1 : 1
-        if (run > longest) longest = run
-        if (!earnedAt && run >= target) earnedAt = date
-        prev = date
-      }
-      return result(earnedAt, longest, target)
     }
 
     case 'tag_match': {
@@ -282,6 +405,21 @@ function evaluateRecordCondition(condition, scopeId, ctx) {
       const completedTags = [...wanted.values()].filter(tag => completedDates[tag])
       const earnedAt = completedTags.length === wanted.size ? maxDate(Object.values(completedDates)) : null
       return result(earnedAt, completedTags.length, wanted.size, { completedTags, completedDates })
+    }
+
+    case 'category_count': {
+      // Different categories with a record. Inside a category that means its
+      // subcategories — records filed directly under it don't add one.
+      const target = positiveInteger(condition.target)
+      const seen = new Set()
+      const firstDates = []
+      for (const record of records) {
+        const id = record.categoryId
+        if (!id || id === scopeId || seen.has(id)) continue
+        seen.add(id)
+        firstDates.push(record.date)
+      }
+      return result(firstDates[target - 1], seen.size, target)
     }
 
     case 'cross_category_cumulative':
@@ -317,7 +455,7 @@ function evaluateCrossCategory(condition, ctx) {
   const eventsByDate = new Map()
   sources.forEach((source, sourceIndex) => {
     for (const record of ctx.recordsIn(source.categoryId)) {
-      const value = recordValueIn(record, condition.unit)
+      const value = valueOf(record, condition.unit)
       if (value == null) continue
       if (!eventsByDate.has(record.date)) eventsByDate.set(record.date, [])
       eventsByDate.get(record.date).push({ sourceIndex, value })
@@ -354,7 +492,13 @@ function evaluateMetaCondition(achievement, all, results, ctx) {
   switch (condition.type) {
     case 'meta_count': {
       const target = positiveInteger(condition.target)
-      const dates = pool().map(a => results.get(a.id)).filter(r => r?.earned).map(r => r.earnedAt).sort()
+      const minRank = condition.minTier ? getTier(condition.minTier).rank : 0
+      const dates = pool()
+        .filter(a => getTier(a.tier).rank >= minRank)
+        .map(a => results.get(a.id))
+        .filter(r => r?.earned)
+        .map(r => r.earnedAt)
+        .sort()
       return result(dates[target - 1], dates.length, target)
     }
 

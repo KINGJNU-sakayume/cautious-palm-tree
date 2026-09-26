@@ -36,6 +36,37 @@ export function daysBetween(from, to) {
   return Math.round((parseDateStr(to) - parseDateStr(from)) / 86400000)
 }
 
+/** Monday of the week that `dateStr` falls in (weeks run Monday–Sunday). */
+export function weekStart(dateStr) {
+  return addDays(dateStr, -((parseDateStr(dateStr).getDay() + 6) % 7))
+}
+
+/**
+ * Calendar period a date belongs to, as a sortable key:
+ * 'day' → '2026-03-15', 'week' → '2026-03-09' (its Monday), 'month' → '2026-03', 'year' → '2026'.
+ */
+export function periodKey(dateStr, period) {
+  switch (period) {
+    case 'week': return weekStart(dateStr)
+    case 'month': return dateStr.slice(0, 7)
+    case 'year': return dateStr.slice(0, 4)
+    default: return dateStr
+  }
+}
+
+/** The key of the period right after `key` (see periodKey). */
+export function nextPeriodKey(key, period) {
+  switch (period) {
+    case 'week': return addDays(key, 7)
+    case 'month': {
+      const [y, m] = key.split('-').map(Number)
+      return m === 12 ? `${y + 1}-01` : `${y}-${pad(m + 1)}`
+    }
+    case 'year': return String(Number(key) + 1)
+    default: return addDays(key, 1)
+  }
+}
+
 export function uniqueSortedDates(records) {
   return [...new Set(records.map(r => r.date).filter(isValidDateStr))].sort()
 }
