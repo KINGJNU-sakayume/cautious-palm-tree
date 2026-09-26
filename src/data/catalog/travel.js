@@ -54,9 +54,9 @@ export default [
     metaCount(10)),
 
   // ── 국내 ──────────────────────────────────────────────────────────────────
-  define('ach-domestic-001', 'cat-domestic', 'bronze', '첫 국내 여행', '국내 여행을 처음 기록해 보세요.',
+  define('ach-domestic-001', 'cat-domestic', 'bronze', '한국 맵 첫 워프', '국내 여행을 처음 기록해 보세요. 같은 언어인데 풍경은 확실히 바뀝니다.',
     action()),
-  define('ach-domestic-002', 'cat-domestic', 'silver', '주말엔 여행', '국내 여행을 10번 기록해 보세요.',
+  define('ach-domestic-002', 'cat-domestic', 'silver', '주말 순간이동 10회', '국내 여행을 10번 기록해 보세요. 월요일의 나만 이동 사실을 싫어합니다.',
     count(10)),
   define('ach-domestic-003', 'cat-domestic', 'gold', '국내파 여행가', '국내 여행을 30번 기록해 보세요.',
     count(30)),
@@ -84,15 +84,15 @@ export default [
     tag('한옥')),
 
   // ── 해외 ──────────────────────────────────────────────────────────────────
-  define('ach-travel-001', 'cat-international', 'silver', '여권 도장', '첫 해외여행을 기록해 보세요.',
+  define('ach-travel-001', 'cat-international', 'silver', '국경 밖 첫 로딩', '첫 해외여행을 기록해 보세요. 지도 바깥쪽이 실제로 열렸습니다.',
     action()),
-  define('ach-travel-002', 'cat-international', 'gold', '세계 여행자', '해외여행을 5번 기록해 보세요.',
+  define('ach-travel-002', 'cat-international', 'gold', '지구 사용법 익히는 중', '해외여행을 5번 기록해 보세요. 공항 표지판이 조금씩 친숙해집니다.',
     count(5)),
   define('ach-intl-001', 'cat-international', 'platinum', '지구촌 여행자', '해외여행을 10번 기록해 보세요.',
     count(10)),
   define('ach-intl-008', 'cat-international', 'silver', '일주일 여행', '한 번의 해외여행에서 7박 이상 머물러 보세요.',
     single(7, '박')),
-  define('ach-intl-007', 'cat-international', 'platinum', '한 달 살기', '한 번의 해외여행에서 30박 이상 머물러 보세요.',
+  define('ach-intl-007', 'cat-international', 'platinum', '관광객에서 임시 주민으로', '한 번의 해외여행에서 30박 이상 머물러 보세요. 단골 마트가 생기면 성공입니다.',
     single(30, '박')),
   define('ach-intl-006', 'cat-international', 'gold', '해외 30박', '해외에서 보낸 밤을 합쳐 30박을 채워 보세요.',
     total(30, '박')),
@@ -112,7 +112,7 @@ export default [
     tag('남극'), HIDDEN),
 
   // ── 캠핑 (박) ──────────────────────────────────────────────────────────────
-  define('ach-camping-001', 'cat-camping', 'bronze', '첫 캠핑', '첫 캠핑을 기록해 보세요.',
+  define('ach-camping-001', 'cat-camping', 'bronze', '벽 대신 지퍼가 있는 밤', '첫 캠핑을 기록해 보세요. 오늘의 현관문은 지퍼입니다.',
     action()),
   define('ach-camping-002', 'cat-camping', 'silver', '캠핑 초보 탈출', '캠핑을 5번 기록해 보세요.',
     count(5)),
