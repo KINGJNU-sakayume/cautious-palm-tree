@@ -34,6 +34,7 @@ export default function AchievementCard({ achievement, onClick }) {
   const [showAll, setShowAll] = useState(false)
 
   const isHiddenLocked = achievement.isHidden && !achievement.isEarned
+  const isRare = achievement.rarity != null && achievement.rarity < 5
   const isTagSet = achievement.condition?.type === 'tag_set_complete'
   const tags = isTagSet ? (achievement.condition.tags || []) : []
   const current = achievement.progress || 0
@@ -74,7 +75,7 @@ export default function AchievementCard({ achievement, onClick }) {
         'bg-white border rounded-xl shadow-card px-4 py-3 transition-all select-none',
         achievement.isEarned ? 'border-slate-200' : 'border-slate-200',
         !achievement.isEarned && !isHiddenLocked ? 'opacity-80' : '',
-        achievement.rarity < 5 && achievement.isEarned ? 'achievement-rare-border' : '',
+        isRare && achievement.isEarned ? 'achievement-rare-border' : '',
         isTagSet || onClick ? 'cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5' : '',
       ]
         .filter(Boolean)
@@ -84,7 +85,7 @@ export default function AchievementCard({ achievement, onClick }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
             <TrophyTierBadge tier={achievement.tier} size="xs" />
-            {achievement.rarity < 5 && achievement.isEarned && (
+            {isRare && achievement.isEarned && (
               <span className="text-[10px] font-medium uppercase tracking-widest text-amber-500">희귀</span>
             )}
           </div>

@@ -5,7 +5,7 @@ import { formatDate, conditionSummaryText, typeLabel, getConditionTarget } from 
 
 export default function AchievementListItem({ achievement, onClick, isSelected = false }) {
   const isHiddenLocked = achievement.isHidden && !achievement.isEarned
-  const isRare = achievement.rarity < 5
+  const isRare = achievement.rarity != null && achievement.rarity < 5
 
   return (
     <div
@@ -89,7 +89,9 @@ export default function AchievementListItem({ achievement, onClick, isSelected =
 
       {/* Right: rarity */}
       <div className="flex-shrink-0 text-right pt-0.5">
-        <span className="text-xs text-slate-400">{achievement.rarity}%</span>
+        <span className="text-xs text-slate-400">
+          {achievement.rarity == null ? '희귀도 —' : `희귀도 ${achievement.rarity}`}
+        </span>
       </div>
     </div>
   )
