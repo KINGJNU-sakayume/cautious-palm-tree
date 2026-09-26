@@ -1,103 +1,51 @@
 # 업적 라이브러리 (Achievement Library)
 
-A personal achievement tracking PWA built with React and backed by Supabase.
+개인 업적을 GitHub 저장소의 정적 데이터로 관리하는 React PWA입니다.
 
 ## Tech Stack
 
-- **Frontend**: React 18, React Router 6, Tailwind CSS
-- **Build**: Vite 6 + vite-plugin-pwa
-- **Database**: Supabase (PostgreSQL)
+- React 18
+- React Router 6
+- Tailwind CSS
+- Vite 6 + vite-plugin-pwa
+- 데이터 원본: GitHub 저장소의 `src/data/*.js`
 
-## Prerequisites
+## 데이터 관리 원칙
 
-- Node.js 18+
-- A [Supabase](https://supabase.com) project
+- `src/data/categories.js`: 카테고리 정의
+- `src/data/achievements.js`: 업적 정의 및 현재 획득 상태
+- `src/data/records.js`: 앱에서 사용하는 활성 기록
+- `src/data/records.archive.js`: 2026-09-26 전환 시 보존한 기존 25개 기록의 비활성 아카이브
 
-## Setup
+현재 활성 기록은 비워 두었습니다. 기존 기록은 감사/복구 목적의 아카이브에 그대로 보존되어 있으며 앱에서는 import하지 않습니다.
 
-### 1. Install dependencies
+## 실행
+
 ```bash
 npm install
-```
-
-### 2. Create Supabase tables
-Run the following SQL in your Supabase project's **SQL Editor**:
-
-```sql
-CREATE TABLE IF NOT EXISTS categories (
-  id        TEXT PRIMARY KEY,
-  name      TEXT NOT NULL,
-  parent_id TEXT REFERENCES categories(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS records (
-  id                       TEXT PRIMARY KEY,
-  category_id              TEXT REFERENCES categories(id) ON DELETE SET NULL,
-  date                     DATE NOT NULL,
-  value                    NUMERIC,
-  unit                     TEXT,
-  memo                     TEXT,
-  photo_url                TEXT,
-  tags                     JSONB NOT NULL DEFAULT '[]',
-  unlocked_achievement_ids JSONB NOT NULL DEFAULT '[]'
-);
-
-CREATE TABLE IF NOT EXISTS achievements (
-  id           TEXT PRIMARY KEY,
-  title        TEXT NOT NULL,
-  description  TEXT,
-  category_id  TEXT REFERENCES categories(id) ON DELETE SET NULL,
-  tier         TEXT NOT NULL,
-  type         TEXT NOT NULL,
-  condition    JSONB NOT NULL DEFAULT '{}',
-  rarity       NUMERIC,
-  is_hidden    BOOLEAN NOT NULL DEFAULT FALSE,
-  is_earned    BOOLEAN NOT NULL DEFAULT FALSE,
-  earned_at    DATE,
-  progress     NUMERIC NOT NULL DEFAULT 0,
-  soft_deleted BOOLEAN NOT NULL DEFAULT FALSE
-);
-
-ALTER TABLE categories   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE records      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow_all_categories"   ON categories   FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_records"      ON records      FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_achievements" ON achievements FOR ALL USING (true) WITH CHECK (true);
-```
-
-### 3. Configure environment variables
-Create `.env.local` in the project root:
-
-```
-VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-Find these values in your Supabase project under **Settings → API**.
-
-### 4. Run the app
-```bash
 npm run dev
 ```
 
-On first load the app automatically seeds the database with default categories, records, and achievements.
+## 정적 데이터 모드의 동작
+
+앱은 시작할 때 `src/data`의 값을 직접 로드합니다. Supabase나 외부 DB는 사용하지 않습니다.
+
+기존 관리 UI의 추가/수정/삭제 동작은 호환성을 위해 현재 세션 메모리에서는 동작하지만, 새로고침하면 저장소의 정적 데이터로 되돌아갑니다. 영구 변경은 `src/data` 파일을 수정하고 Git으로 커밋해야 합니다.
 
 ## Architecture
 
 ```
 src/
-├── context/AppContext.jsx       # Central state (useReducer + Supabase sync)
-├── lib/
-│   ├── supabase.js              # Supabase client singleton
-│   ├── db.js                    # Async CRUD data access layer
-│   └── seed.js                  # First-run seeder
-├── data/                        # Static seed data (categories, records, achievements)
+├── context/AppContext.jsx
+├── data/
+│   ├── categories.js
+│   ├── achievements.js
+│   ├── records.js
+│   └── records.archive.js
 ├── utils/
-│   └── achievementEvaluator.js  # In-memory achievement unlock logic
-├── pages/                       # Dashboard, RecordHub, AchievementManagement, Showcase
-└── components/                  # UI components
+│   └── achievementEvaluator.js
+├── pages/
+└── components/
 ```
 
-Data flows **optimistically**: every mutation dispatches to local React state immediately, then persists to Supabase asynchronously. If Supabase is unreachable the app falls back to static seed data (read-only).
+상세 구조·UI/UX·내부 설계 검토와 후속 개선안은 `docs/architecture-ui-ux-review-2026-09-26.md`를 참조하십시오.
