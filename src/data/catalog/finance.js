@@ -10,7 +10,7 @@ const SAVINGS_AND_INVESTMENTS = ['cat-saving', 'cat-investing'].map(categoryId =
 
 export default [
   // ── 재정 전체 ─────────────────────────────────────────────────────────────
-  define('ach-finance-001', 'cat-finance', 'silver', '재테크 입문', '투자, 저축, 가계부를 한 번씩 모두 기록해 보세요.',
+  define('ach-finance-001', 'cat-finance', 'silver', '돈에게도 할 일 주기', '투자, 저축, 가계부를 한 번씩 모두 기록해 보세요. 돈도 쉬기만 하면 심심합니다.',
     metaList('ach-invest-001', 'ach-saving-001', 'ach-budget-001')),
   define('ach-finance-002', 'cat-finance', 'gold', '매달 돈 관리', '12개월 연속으로 매달 재정 기록을 남겨 보세요.',
     months(12)),
@@ -22,7 +22,7 @@ export default [
     metaCount(10)),
 
   // ── 투자 (원) ──────────────────────────────────────────────────────────────
-  define('ach-invest-001', 'cat-investing', 'bronze', '첫 투자', '첫 투자를 기록해 보세요.',
+  define('ach-invest-001', 'cat-investing', 'bronze', '돈을 출근시킴', '첫 투자를 기록해 보세요. 오늘부터 돈도 근무표가 생겼습니다.',
     action()),
   define('ach-invest-010', 'cat-investing', 'bronze', '첫 ETF', "ETF에 투자하고 'ETF' 태그를 붙여 보세요.",
     tag('ETF')),
@@ -38,7 +38,7 @@ export default [
     total(10000000, '원')),
   define('ach-invest-007', 'cat-investing', 'diamond', '투자금 1억 원', '투자한 금액을 합쳐 1억 원을 채워 보세요.',
     total(100000000, '원')),
-  define('ach-invest-008', 'cat-investing', 'silver', '첫 배당금', "배당금을 받은 날 '배당' 태그를 붙여 기록해 보세요.",
+  define('ach-invest-008', 'cat-investing', 'silver', '돈이 낳은 첫 동전', "배당금을 받은 날 '배당' 태그를 붙여 기록해 보세요. 자본의 새끼가 처음 태어났어요.",
     tag('배당')),
   define('ach-invest-009', 'cat-investing', 'gold', '배당 월급', "'배당' 태그를 붙인 기록을 12번 남겨 보세요.",
     tagCount('배당', 12)),
@@ -46,7 +46,7 @@ export default [
     tag('연금')),
 
   // ── 저축 (원) ──────────────────────────────────────────────────────────────
-  define('ach-saving-001', 'cat-saving', 'bronze', '첫 저축', '첫 저축을 기록해 보세요.',
+  define('ach-saving-001', 'cat-saving', 'bronze', '미래의 나에게 송금', '첫 저축을 기록해 보세요. 수취인은 조금 더 나이 든 나입니다.',
     action()),
   define('ach-saving-003', 'cat-saving', 'silver', '저축 100만 원', '저축한 금액을 합쳐 100만 원을 모아 보세요.',
     total(1000000, '원')),
@@ -64,13 +64,13 @@ export default [
     months(36)),
   define('ach-saving-008', 'cat-saving', 'platinum', '52주 적금', '52주 연속으로 매주 저축해 보세요.',
     weeks(52)),
-  define('ach-saving-009', 'cat-saving', 'silver', '비상금 통장', "비상금을 따로 모으고 '비상금' 태그를 붙여 보세요.",
+  define('ach-saving-009', 'cat-saving', 'silver', '미래의 방패', "비상금을 따로 모으고 '비상금' 태그를 붙여 보세요. 평소엔 조용하지만 위기 때 일합니다.",
     tag('비상금')),
   define('ach-saving-010', 'cat-saving', 'silver', '짠테크', "아껴서 모은 돈에 '짠테크' 태그를 붙여 10번 기록해 보세요.",
     tagCount('짠테크', 10)),
 
   // ── 가계부 ────────────────────────────────────────────────────────────────
-  define('ach-budget-001', 'cat-budgeting', 'bronze', '가계부 첫 줄', '첫 지출을 가계부에 기록해 보세요.',
+  define('ach-budget-001', 'cat-budgeting', 'bronze', '소비의 부검 시작', '첫 지출을 가계부에 기록해 보세요. 돈이 어디로 갔는지 사건 현장을 복원합니다.',
     action()),
   define('ach-budget-002', 'cat-budgeting', 'silver', '가계부 일주일', '7일 연속으로 가계부를 써 보세요.',
     streak(7)),
@@ -80,7 +80,7 @@ export default [
     streak(100)),
   define('ach-budget-005', 'cat-budgeting', 'platinum', '가계부 1년', '12개월 연속으로 매달 20일 이상 가계부를 써 보세요.',
     months(12, 20)),
-  define('ach-budget-006', 'cat-budgeting', 'bronze', '무지출 데이', "돈을 한 푼도 쓰지 않은 날 '무지출' 태그를 붙여 기록해 보세요.",
+  define('ach-budget-006', 'cat-budgeting', 'bronze', '지갑 휴무일', "돈을 한 푼도 쓰지 않은 날 '무지출' 태그를 붙여 기록해 보세요. 지갑도 주 52시간제가 필요합니다.",
     tag('무지출')),
   define('ach-budget-007', 'cat-budgeting', 'silver', '무지출 10일', "'무지출' 태그를 붙인 날을 10번 기록해 보세요.",
     tagCount('무지출', 10)),
