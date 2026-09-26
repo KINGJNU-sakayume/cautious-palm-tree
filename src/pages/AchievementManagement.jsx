@@ -1,626 +1,249 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import AchievementEditor, { blankAchievement } from '@/components/AchievementEditor.jsx'
+import EmptyState from '@/components/EmptyState.jsx'
+import Medal, { TierLabel } from '@/components/Medal.jsx'
+import Modal from '@/components/Modal.jsx'
+import ProgressBar from '@/components/ProgressBar.jsx'
+import { CategoryList } from '@/components/CategoryPicker.jsx'
 import { useApp } from '@/context/AppContext.jsx'
-import { useConfirm } from '@/hooks/useConfirm.jsx'
-import TrophyTierBadge from '@/components/TrophyTierBadge.jsx'
-import CategoryTreeSelector from '@/components/CategoryTreeSelector.jsx'
-import ConditionBuilder from '@/components/ConditionBuilder.jsx'
-import { getCategoryPath } from '@/utils/categoryTree.js'
-import {
-  conditionSummaryText, typeLabel, tierLabel, generateId,
-  truncateCategoryPathLeft, getConditionTarget, renderTemplate,
-} from '@/utils/formatters.js'
+import { TIERS } from '@/constants/tiers.js'
+import { describeCondition, hasMeasurableProgress, progressLabel, progressRatio } from '@/utils/achievementText.js'
+import { getCategoryPath, getSubtreeIds } from '@/utils/categoryTree.js'
+import { formatDateShort } from '@/utils/formatters.js'
+import { AlertIcon, ChevronDownIcon, EyeOffIcon, FolderIcon, MedalIcon, PlusIcon, SearchIcon, XIcon } from '@/components/Icons.jsx'
 
-const TIERS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary']
-const TYPES = ['one-time', 'meta']
-
-// Condition types that support enumerable progress templates
-const ENUMERABLE_TYPES = [
-  'tag_set_complete', 'meta_list', 'count', 'cumulative',
-  'tag_count', 'daily_cumulative', 'cross_category_cumulative',
+const STATUS_FILTERS = [
+  { id: 'all', label: '전체' },
+  { id: 'progress', label: '진행 중' },
+  { id: 'earned', label: '달성' },
 ]
 
-function blankAchievement() {
-  return {
-    id: null,
-    title: '',
-    description: '',
-    categoryId: null,
-    tier: 'bronze',
-    type: 'one-time',
-    isHidden: false,
-    condition: { type: 'action' },
-    rarity: null,
-    isEarned: false,
-    earnedAt: null,
-    progress: 0,
-    progressFormat: '',
-    expandTitle: '',
-    completedStyle: 'bold',
-    incompleteStyle: 'muted',
-    conditionDisplay: '',
+function Status({ achievement: a }) {
+  if (a.error) {
+    return <span className="inline-flex items-center gap-1 text-xs font-medium text-danger"><AlertIcon size={14} /> 조건 확인 필요</span>
   }
+  if (a.isEarned) {
+    return <span className="text-xs font-medium text-accent-ink">{formatDateShort(a.earnedAt)} 달성</span>
+  }
+  if (hasMeasurableProgress(a.condition)) {
+    return (
+      <span className="flex items-center gap-2 w-full">
+        <ProgressBar value={progressRatio(a)} height={4} className="flex-1 min-w-[48px]" />
+        <span className="text-xs font-medium text-ink-2 tabular whitespace-nowrap">{progressLabel(a)}</span>
+      </span>
+    )
+  }
+  return <span className="text-xs text-ink-3">아직</span>
 }
 
-// SVG check icon
-function CheckIcon({ className = '' }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className={`w-4 h-4 ${className}`}>
-      <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
-    </svg>
-  )
-}
+function AchievementRow({ achievement: a, categories, rootId, onOpen }) {
+  const path = a.categoryId ? getCategoryPath(a.categoryId, categories) : []
+  const subPath = path.filter(c => c.id !== rootId).map(c => c.name).join(' › ')
+  const rule = describeCondition(a.condition, { categories, achievement: a })
 
-// SVG lock icon
-function LockIcon({ className = '' }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className={`w-4 h-4 ${className}`}>
-      <path fillRule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v4A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-4A1.5 1.5 0 0 0 11 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clipRule="evenodd" />
-    </svg>
+    <li>
+      <button type="button" onClick={() => onOpen(a)} className="w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors hover:bg-sunken/50">
+        <Medal tier={a.tier} earned={a.isEarned} size={36} />
+        <span className="flex-1 min-w-0">
+          <span className="flex items-center gap-2">
+            <span className="truncate text-base font-semibold text-ink">{a.title}</span>
+            <TierLabel tier={a.tier} className="flex-shrink-0" />
+            {a.isHidden && (
+              <span className="tag h-5 gap-1 flex-shrink-0" title="달성 전까지 숨겨지는 업적"><EyeOffIcon size={12} /> 숨김</span>
+            )}
+          </span>
+          <span className="block mt-0.5 text-sm text-ink-2 truncate">
+            {subPath && <>{subPath} · </>}{rule}
+          </span>
+          <span className="sm:hidden mt-1.5 flex"><Status achievement={a} /></span>
+        </span>
+        <span className="hidden sm:flex w-44 flex-shrink-0 justify-end">
+          <Status achievement={a} />
+        </span>
+      </button>
+    </li>
   )
 }
 
 export default function AchievementManagement() {
-  const { categories, achievements, addAchievement, updateAchievement, deleteAchievement } = useApp()
-  const { confirmDialog, confirm } = useConfirm()
-  const [selectedId, setSelectedId] = useState(null)
-  const [editForm, setEditForm] = useState(null)
-  const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const { achievements, categories } = useApp()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const [editing, setEditing] = useState(null)
+  const [status, setStatus] = useState('all')
+  const [tier, setTier] = useState('')
+  const [categoryId, setCategoryId] = useState(null)
   const [search, setSearch] = useState('')
-  const [filterTier, setFilterTier] = useState('')
-  const [filterEarned, setFilterEarned] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
 
-  // Refs for template token insertion
-  const cardSummaryRef = useRef(null)
-  const expandTitleRef = useRef(null)
-  const lastFocusedInput = useRef('progressFormat')
+  // Links from other screens: { editId }, { create, categoryId } or { categoryId }.
+  useEffect(() => {
+    const state = location.state
+    if (!state) return
+    if (state.editId) {
+      const target = achievements.find(a => a.id === state.editId)
+      if (target) setEditing(target)
+    } else if (state.create) {
+      setEditing(blankAchievement(state.categoryId ?? null))
+    } else if (state.categoryId) {
+      setCategoryId(state.categoryId)
+    }
+    navigate('.', { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key])
 
-  const filteredAchievements = useMemo(() => {
+  const activeCategory = categoryId && categories.some(c => c.id === categoryId) ? categoryId : null
+  const query = search.trim().toLowerCase()
+
+  const filtered = useMemo(() => {
+    const scope = activeCategory ? getSubtreeIds(activeCategory, categories) : null
     return achievements.filter(a => {
-      if (search && !(
-        a.title.toLowerCase().includes(search.toLowerCase()) ||
-        a.description?.toLowerCase().includes(search.toLowerCase())
-      )) return false
-      if (filterTier && a.tier !== filterTier) return false
-      if (filterEarned === 'earned' && !a.isEarned) return false
-      if (filterEarned === 'locked' && a.isEarned) return false
+      if (scope && !scope.has(a.categoryId)) return false
+      if (tier && a.tier !== tier) return false
+      if (status === 'earned' && !a.isEarned) return false
+      if (status === 'progress' && a.isEarned) return false
+      if (query) {
+        const path = a.categoryId ? getCategoryPath(a.categoryId, categories).map(c => c.name).join(' ') : '모든 기록'
+        if (!`${a.title} ${a.description} ${path}`.toLowerCase().includes(query)) return false
+      }
       return true
     })
-  }, [achievements, search, filterTier, filterEarned])
+  }, [achievements, categories, activeCategory, tier, status, query])
 
-  const openEdit = (achievement) => {
-    setSelectedId(achievement.id)
-    setEditForm({
-      progressFormat: '',
-      expandTitle: '',
-      completedStyle: 'bold',
-      incompleteStyle: 'muted',
-      conditionDisplay: '',
-      ...achievement,
-    })
-    setSlideOverOpen(true)
-  }
-
-  const openNew = () => {
-    setSelectedId('__new__')
-    setEditForm(blankAchievement())
-    setSlideOverOpen(true)
-  }
-
-  const closeSlideOver = () => {
-    setSlideOverOpen(false)
-    setSelectedId(null)
-    setEditForm(null)
-  }
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') closeSlideOver() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [])
-
-  const handleSave = () => {
-    if (!editForm.title.trim()) return
-    if (selectedId === '__new__') {
-      addAchievement({ ...editForm, id: generateId('ach') })
-      closeSlideOver()
-    } else {
-      updateAchievement(editForm)
+  const groups = useMemo(() => {
+    const roots = categories.filter(c => !c.parentId)
+    const buckets = new Map([[null, []], ...roots.map(r => [r.id, []])])
+    for (const a of filtered) {
+      const rootId = a.categoryId ? getCategoryPath(a.categoryId, categories)[0]?.id ?? null : null
+      buckets.get(rootId)?.push(a)
     }
-  }
+    return [...buckets.entries()]
+      .filter(([, list]) => list.length > 0)
+      .map(([id, list]) => ({ id, name: id ? categories.find(c => c.id === id)?.name : '모든 기록', list }))
+  }, [filtered, categories])
 
-  const handleDelete = async () => {
-    if (!selectedId || selectedId === '__new__') return
-    const confirmed = await confirm('업적 삭제', '이 업적을 삭제할까요?')
-    if (!confirmed) return
-    deleteAchievement(selectedId)
-    closeSlideOver()
-  }
-
-  const getCategoryPathLabel = (catId) => {
-    if (!catId) return '—'
-    return getCategoryPath(catId, categories).map(c => c.name).join(' › ')
-  }
-
-  const resetFilters = () => {
-    setSearch('')
-    setFilterTier('')
-    setFilterEarned('')
-  }
-
-  const hasActiveFilters = search || filterTier || filterEarned
-
-  // Token insertion into progress format inputs
-  function insertToken(token) {
-    const field = lastFocusedInput.current
-    const ref = field === 'expandTitle' ? expandTitleRef : cardSummaryRef
-    const input = ref.current
-    if (!input) {
-      setEditForm(f => ({ ...f, [field]: (f[field] || '') + token }))
-      return
-    }
-    const start = input.selectionStart
-    const end = input.selectionEnd
-    const current = editForm[field] || ''
-    const newVal = current.slice(0, start) + token + current.slice(end)
-    setEditForm(f => ({ ...f, [field]: newVal }))
-    setTimeout(() => {
-      input.focus()
-      input.setSelectionRange(start + token.length, start + token.length)
-    }, 0)
-  }
-
-  const isEnumerable = editForm
-    ? ENUMERABLE_TYPES.includes(editForm.condition?.type)
-    : false
-  const isTagSet = editForm?.condition?.type === 'tag_set_complete'
-
-  const previewValues = editForm ? {
-    current: editForm.progress || 0,
-    total: getConditionTarget(editForm.condition),
-    lastDate: null,
-  } : {}
+  const earnedCount = achievements.filter(a => a.isEarned).length
+  const filtersActive = status !== 'all' || !!tier || !!activeCategory || !!query
+  const clearFilters = () => { setStatus('all'); setTier(''); setCategoryId(null); setSearch('') }
 
   return (
-    <div className="relative flex flex-col h-full min-h-0">
-      {/* Achievement list — always full width */}
-      <div
-        className="flex flex-col h-full min-h-0 transition-opacity duration-200"
-        style={slideOverOpen ? { opacity: 0.4, pointerEvents: 'none' } : {}}
-      >
-        {/* Table header + filters */}
-        <div className="px-5 py-4 bg-white border-b border-slate-200 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <h1 className="text-type-page font-medium text-slate-900">업적</h1>
-            <button
-              onClick={openNew}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-            >
-              + 새 업적
-            </button>
-          </div>
+    <div className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-8 pt-5 md:pt-8 pb-12">
+      <header className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">업적</h1>
+          <p className="mt-1 text-sm text-ink-2">
+            {achievements.length}개 중 <strong className="font-semibold text-ink">{earnedCount}개</strong> 달성
+          </p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setEditing(blankAchievement(activeCategory))}>
+          <PlusIcon size={18} strokeWidth={2.2} /> 새 업적
+        </button>
+      </header>
 
-          {/* Search — full width */}
+      <div className="mt-5 space-y-2.5">
+        <div className="relative">
+          <SearchIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
           <input
-            type="text"
+            type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="제목으로 검색..."
-            className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
+            placeholder="이름, 설명, 카테고리로 찾기"
+            aria-label="업적 검색"
+            className="input h-11 pl-10"
           />
-
-          {/* Tier + Status dropdowns + reset */}
-          <div className="flex items-center gap-2">
-            <select
-              value={filterTier}
-              onChange={e => setFilterTier(e.target.value)}
-              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-            >
-              <option value="">티어</option>
-              {TIERS.map(t => <option key={t} value={t}>{tierLabel(t)}</option>)}
-            </select>
-            <select
-              value={filterEarned}
-              onChange={e => setFilterEarned(e.target.value)}
-              className="px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-            >
-              <option value="">상태</option>
-              <option value="earned">획득</option>
-              <option value="locked">잠김</option>
-            </select>
-            {hasActiveFilters && (
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center rounded-full bg-sunken p-0.5" role="group" aria-label="상태">
+            {STATUS_FILTERS.map(f => (
               <button
-                onClick={resetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 ml-auto transition-colors"
+                key={f.id}
+                type="button"
+                onClick={() => setStatus(f.id)}
+                aria-pressed={status === f.id}
+                className={`h-7 px-3 rounded-full text-sm font-medium transition-colors ${status === f.id ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink'}`}
               >
-                초기화
+                {f.label}
               </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setPickerOpen(true)} className={`chip ${activeCategory ? 'chip-active' : ''}`}>
+            <FolderIcon size={15} />
+            <span className="max-w-[160px] truncate">{activeCategory ? categories.find(c => c.id === activeCategory)?.name : '모든 카테고리'}</span>
+            <ChevronDownIcon size={14} />
+          </button>
+          <select
+            value={tier}
+            onChange={e => setTier(e.target.value)}
+            aria-label="등급"
+            className={`chip pr-8 appearance-none bg-no-repeat ${tier ? 'chip-active' : ''}`}
+            style={{
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A857C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
+              backgroundPosition: 'right 10px center',
+            }}
+          >
+            <option value="">모든 등급</option>
+            {TIERS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+          {filtersActive && (
+            <button type="button" onClick={clearFilters} className="text-sm font-medium text-ink-2 hover:text-ink px-1">
+              필터 지우기
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-6">
+        {groups.length === 0 ? (
+          <div className="card">
+            {achievements.length === 0 ? (
+              <EmptyState
+                icon={<MedalIcon size={22} />}
+                title="아직 업적이 없어요"
+                body="이루고 싶은 목표를 업적으로 만들어 보세요. 기록이 쌓이면 자동으로 달성돼요."
+                action={<button type="button" className="btn btn-sm btn-primary" onClick={() => setEditing(blankAchievement())}>업적 만들기</button>}
+              />
+            ) : (
+              <EmptyState
+                icon={<SearchIcon size={22} />}
+                title="조건에 맞는 업적이 없어요"
+                body="검색어나 필터를 바꿔 보세요."
+                action={<button type="button" className="btn btn-sm btn-secondary" onClick={clearFilters}><XIcon size={16} /> 필터 지우기</button>}
+              />
             )}
           </div>
-        </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          <table className="w-full text-sm table-fixed">
-            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-              <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 w-32">티어</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">제목</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 hidden xl:table-cell w-48">카테고리</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 hidden xl:table-cell">조건</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 w-16">상태</th>
-                <th className="w-16" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredAchievements.map(a => (
-                <tr
-                  key={a.id}
-                  onClick={() => openEdit(a)}
-                  className="cursor-pointer transition-colors hover:bg-slate-50 group"
-                >
-                  <td className="px-4 py-2.5">
-                    <TrophyTierBadge tier={a.tier} size="xs" />
-                  </td>
-                  <td className="px-4 py-2.5 min-w-0">
-                    <span className="font-medium text-slate-800 truncate block w-full">
-                      {a.isHidden && !a.isEarned ? '??? (숨김)' : a.title}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
-                    <span className="text-xs text-slate-400 block w-full overflow-hidden whitespace-nowrap" title={getCategoryPathLabel(a.categoryId)}>
-                      {truncateCategoryPathLeft(getCategoryPathLabel(a.categoryId))}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 hidden xl:table-cell min-w-0">
-                    <span className="text-xs text-slate-400 truncate block w-full">
-                      {conditionSummaryText(a.condition)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    {a.isEarned
-                      ? <CheckIcon className="text-green-500" />
-                      : <LockIcon className="text-slate-300" />
-                    }
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <span className="text-xs text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      편집 ›
-                    </span>
-                  </td>
-                </tr>
+        ) : groups.map(group => (
+          <section key={group.id ?? 'all'} aria-labelledby={`group-${group.id ?? 'all'}`}>
+            <h2 id={`group-${group.id ?? 'all'}`} className="flex items-baseline gap-2 mb-2 px-1">
+              <span className="section-title">{group.name}</span>
+              <span className="text-sm text-ink-3 tabular">
+                {group.list.filter(a => a.isEarned).length} / {group.list.length}
+              </span>
+            </h2>
+            <ul className="card divide-y divide-line overflow-hidden">
+              {group.list.map(a => (
+                <AchievementRow key={a.id} achievement={a} categories={categories} rootId={group.id} onOpen={setEditing} />
               ))}
-              {filteredAchievements.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
-                    {search
-                      ? `'${search}'에 해당하는 업적이 없습니다.`
-                      : '업적이 없습니다'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            </ul>
+          </section>
+        ))}
       </div>
 
-      {/* Backdrop */}
-      {slideOverOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={closeSlideOver}
-        />
+      {editing && (
+        <AchievementEditor key={editing.id ?? 'new'} achievement={editing} onClose={() => setEditing(null)} />
       )}
 
-      {/* Slide-over panel */}
-      <div
-        className={[
-          'fixed z-50 bg-white shadow-2xl overflow-y-auto scrollbar-thin',
-          // Desktop: right side panel, 480px wide
-          'md:top-0 md:right-0 md:bottom-0 md:w-[480px] md:translate-y-0',
-          // Mobile: bottom sheet, full width
-          'bottom-0 left-0 right-0 md:left-auto max-h-[90vh] md:max-h-none rounded-t-2xl md:rounded-none',
-          'transition-transform duration-300 ease-in-out',
-          slideOverOpen
-            ? 'translate-y-0 md:translate-x-0'
-            : 'translate-y-full md:translate-y-0 md:translate-x-full',
-        ].join(' ')}
-      >
-        {editForm && (
-          <>
-            {/* Slide-over header */}
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3.5 z-10 flex items-center justify-between">
-              <button
-                onClick={closeSlideOver}
-                className="text-slate-500 hover:text-slate-800 text-sm font-medium flex items-center gap-1 transition-colors"
-              >
-                ← 목록
-              </button>
-              <h2 className="text-type-section font-medium text-slate-900">
-                {selectedId === '__new__' ? '새 업적' : '업적 편집'}
-              </h2>
-              <button
-                onClick={closeSlideOver}
-                className="text-slate-400 hover:text-slate-700 text-xl leading-none transition-colors w-6 text-center"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Live preview card */}
-            <div className="mx-5 mt-4 mb-1 p-4 border border-slate-200 rounded-xl bg-slate-50">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <TrophyTierBadge tier={editForm.tier} size="sm" />
-                  </div>
-                  <div className="font-medium text-sm text-slate-800 truncate">
-                    {editForm.title || <span className="text-slate-400 font-normal">업적 제목 미리보기</span>}
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
-                    {editForm.description || '설명이 여기에 표시됩니다.'}
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  {editForm.isEarned
-                    ? <CheckIcon className="text-green-500" />
-                    : <LockIcon className="text-slate-300" />
-                  }
-                </div>
-              </div>
-              {editForm.progressFormat && (
-                <div className="mt-2 text-xs text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-full inline-block">
-                  {renderTemplate(editForm.progressFormat, previewValues)}
-                </div>
-              )}
-            </div>
-
-            {/* Form fields */}
-            <div className="px-5 py-4 space-y-5 pb-8">
-              {/* Title */}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">제목</label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                  placeholder="업적 제목…"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">설명</label>
-                <textarea
-                  value={editForm.description}
-                  onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                  rows={2}
-                  placeholder="이 업적의 의미는 무엇인가요?"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary resize-none"
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">카테고리</label>
-                <CategoryTreeSelector
-                  value={editForm.categoryId}
-                  onChange={id => setEditForm({ ...editForm, categoryId: id })}
-                />
-              </div>
-
-              {/* Tier + Type row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">티어</label>
-                  <select
-                    value={editForm.tier}
-                    onChange={e => setEditForm({ ...editForm, tier: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                  >
-                    {TIERS.map(t => <option key={t} value={t}>{tierLabel(t)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">유형</label>
-                  <select
-                    value={editForm.type}
-                    onChange={e => setEditForm({ ...editForm, type: e.target.value, condition: { type: 'action' } })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                  >
-                    {TYPES.map(t => <option key={t} value={t}>{typeLabel(t)}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* 획득률 + Hidden */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-1 mb-1.5">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">희귀도 점수</label>
-                    <span className="text-[10px] text-slate-400">선택 · 수동 입력</span>
-                    <div className="relative group/tooltip">
-                      <span className="text-slate-400 cursor-help text-xs select-none">ⓘ</span>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-52 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-opacity z-20 text-center shadow-lg">
-                        개인용 앱에서는 실제 전체 사용자 획득률을 계산할 수 없습니다. 필요할 때만 0~100 범위의 참고 점수를 직접 입력하세요.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step="0.1"
-                      value={editForm.rarity ?? ''}
-                      onChange={e => setEditForm({
-                        ...editForm,
-                        rarity: e.target.value === '' ? null : Number(e.target.value),
-                      })}
-                      className="w-full px-3 py-2 pr-7 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">점</span>
-                  </div>
-                </div>
-                <div className="flex flex-col justify-center">
-                  <label className="text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">숨김</label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <div
-                      onClick={() => setEditForm({ ...editForm, isHidden: !editForm.isHidden })}
-                      className={[
-                        'relative w-10 h-5 rounded-full transition-colors cursor-pointer',
-                        editForm.isHidden ? 'bg-primary' : 'bg-slate-200',
-                      ].join(' ')}
-                    >
-                      <span
-                        className={[
-                          'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                          editForm.isHidden ? 'translate-x-5' : 'translate-x-0.5',
-                        ].join(' ')}
-                      />
-                    </div>
-                    <span className="text-sm text-slate-600">{editForm.isHidden ? '숨김' : '공개'}</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Condition builder */}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-2 uppercase tracking-wide">조건</label>
-                <ConditionBuilder
-                  type={editForm.type}
-                  value={editForm.condition}
-                  onChange={cond => setEditForm({ ...editForm, condition: cond })}
-                />
-              </div>
-
-              {/* Custom condition display text */}
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1 uppercase tracking-wide">조건 표시 문구</label>
-                <input
-                  type="text"
-                  value={editForm.conditionDisplay || ''}
-                  onChange={e => setEditForm(f => ({ ...f, conditionDisplay: e.target.value }))}
-                  placeholder={editForm.condition ? conditionSummaryText(editForm.condition) : '자동 생성됨'}
-                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"
-                />
-                <p className="text-[10px] text-slate-400 mt-0.5">비워두면 조건에 따라 자동 생성됩니다</p>
-              </div>
-
-              {/* Progress display format — only for enumerable condition types */}
-              {isEnumerable && (
-                <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50">
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    진행 표시 형식
-                  </label>
-
-                  {/* Token buttons */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {['{current}', '{total}', '{remaining}', '{pct}', '{last_date}'].map(token => (
-                      <button
-                        key={token}
-                        type="button"
-                        onClick={() => insertToken(token)}
-                        className="text-xs px-2 py-0.5 bg-white hover:bg-slate-100 rounded border border-slate-200 font-mono text-slate-700 transition-colors"
-                      >
-                        {token}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* 카드 요약 */}
-                  <div>
-                    <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">카드 요약</label>
-                    <input
-                      ref={cardSummaryRef}
-                      type="text"
-                      value={editForm.progressFormat}
-                      onChange={e => setEditForm({ ...editForm, progressFormat: e.target.value })}
-                      onFocus={() => { lastFocusedInput.current = 'progressFormat' }}
-                      placeholder="{current}/{total}"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary bg-white"
-                    />
-                  </div>
-
-                  {/* 확장 제목 — tag_set only */}
-                  {isTagSet && (
-                    <div>
-                      <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">확장 제목</label>
-                      <input
-                        ref={expandTitleRef}
-                        type="text"
-                        value={editForm.expandTitle}
-                        onChange={e => setEditForm({ ...editForm, expandTitle: e.target.value })}
-                        onFocus={() => { lastFocusedInput.current = 'expandTitle' }}
-                        placeholder="{total}개 항목 달성 현황"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary bg-white"
-                      />
-                    </div>
-                  )}
-
-                  {/* Style dropdowns — tag_set only */}
-                  {isTagSet && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">완료 항목 스타일</label>
-                        <select
-                          value={editForm.completedStyle}
-                          onChange={e => setEditForm({ ...editForm, completedStyle: e.target.value })}
-                          className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary bg-white"
-                        >
-                          <option value="bold">진하게</option>
-                          <option value="strikethrough">취소선</option>
-                          <option value="check-only">체크만</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase tracking-wide">미완료 항목 스타일</label>
-                        <select
-                          value={editForm.incompleteStyle}
-                          onChange={e => setEditForm({ ...editForm, incompleteStyle: e.target.value })}
-                          className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary bg-white"
-                        >
-                          <option value="muted">연하게</option>
-                          <option value="gray">회색</option>
-                          <option value="hidden">숨김</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Live preview pill */}
-                  <div className="text-xs text-slate-600 bg-white border border-slate-200 px-3 py-2 rounded-lg">
-                    <span className="text-slate-400">미리보기: </span>
-                    <span className="font-medium">
-                      {renderTemplate(editForm.progressFormat || '{current}/{total}', previewValues)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-                <button
-                  onClick={handleSave}
-                  className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-                >
-                  저장
-                </button>
-                {selectedId !== '__new__' && (
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2.5 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-      {confirmDialog}
+      <Modal open={pickerOpen} title="카테고리로 보기" size="sm" onClose={() => setPickerOpen(false)} bodyClassName="p-0">
+        <CategoryList
+          value={activeCategory}
+          onChange={(id) => { setCategoryId(id); setPickerOpen(false) }}
+          allowNone
+          noneLabel="모든 카테고리"
+          maxHeight={420}
+        />
+      </Modal>
     </div>
   )
 }

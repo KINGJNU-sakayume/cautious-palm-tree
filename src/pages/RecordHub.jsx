@@ -1,415 +1,334 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import ActivityCalendar from '@/components/ActivityCalendar.jsx'
+import RecordCard, { Highlight } from '@/components/RecordCard.jsx'
+import RecordFab from '@/components/RecordFab.jsx'
+import EmptyState from '@/components/EmptyState.jsx'
+import Modal from '@/components/Modal.jsx'
+import Medal, { TierLabel } from '@/components/Medal.jsx'
+import { CategoryList } from '@/components/CategoryPicker.jsx'
 import { useApp } from '@/context/AppContext.jsx'
-import ActivityHeatmap from '@/components/ActivityHeatmap.jsx'
-import RecordCard from '@/components/RecordCard.jsx'
-import RecordEditor from '@/components/RecordEditor.jsx'
-import UnlockLogCard from '@/components/UnlockLogCard.jsx'
-import FilterBar from '@/components/FilterBar.jsx'
-import { formatDate, todayStr, dateToMonth } from '@/utils/formatters.js'
-import { getCategoryPath } from '@/utils/categoryTree.js'
+import { useUI } from '@/context/UIContext.jsx'
+import { getCategoryPathLabel, getSubtreeIds } from '@/utils/categoryTree.js'
+import { addDays, longestStreak, todayStr, uniqueSortedDates } from '@/utils/dates.js'
+import { formatDateWithWeekday, formatNumber } from '@/utils/formatters.js'
 import { JUMP_HIGHLIGHT_MS } from '@/constants/timing.js'
+import { CalendarIcon, ChevronDownIcon, FolderIcon, NotebookIcon, PlusIcon, SearchIcon, XIcon } from '@/components/Icons.jsx'
 
-const BATCH_SIZE = 30
+const GROUPS_PER_PAGE = 30
+const TYPE_FILTERS = [
+  { id: 'all', label: '전체' },
+  { id: 'records', label: '기록' },
+  { id: 'achievements', label: '업적 달성' },
+]
 
-function computeMonthStats(records, yyyyMm) {
-  const monthRecords = records.filter(r => r.date && r.date.startsWith(yyyyMm))
+function monthStats(records, month) {
+  const inMonth = records.filter(r => r.date.startsWith(month))
+  const dates = uniqueSortedDates(inMonth)
+  return { count: inMonth.length, days: dates.length, streak: longestStreak(dates) }
+}
 
-  const total = monthRecords.length
-
-  const dateSet = new Set(monthRecords.map(r => r.date))
-  const activeDays = dateSet.size
-
-  // Longest consecutive streak within the month
-  const sortedDates = Array.from(dateSet).sort()
-  let longest = sortedDates.length > 0 ? 1 : 0
-  let current = sortedDates.length > 0 ? 1 : 0
-  for (let i = 1; i < sortedDates.length; i++) {
-    const prev = new Date(sortedDates[i - 1])
-    const cur = new Date(sortedDates[i])
-    const diff = (cur - prev) / (1000 * 60 * 60 * 24)
-    if (diff === 1) {
-      current++
-      if (current > longest) longest = current
-    } else {
-      current = 1
-    }
-  }
-
-  // This week count (Sun–Sat week containing today)
-  const today = new Date(todayStr())
-  const weekStart = new Date(today)
-  weekStart.setDate(today.getDate() - today.getDay())
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekStart.getDate() + 6)
-  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  const thisWeek = monthRecords.filter(r => r.date >= fmt(weekStart) && r.date <= fmt(weekEnd)).length
-
-  // Top dates by record count for quick jump
-  const countByDate = {}
-  monthRecords.forEach(r => { countByDate[r.date] = (countByDate[r.date] || 0) + 1 })
-  const topDates = Object.entries(countByDate)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([date, count]) => ({ date, count }))
-
-  return { total, activeDays, longestStreak: longest, thisWeek, topDates }
+function UnlockRow({ achievement, terms, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full flex items-center gap-3 rounded-2xl bg-accent-soft/60 px-4 py-2.5 text-left transition-colors hover:bg-accent-soft"
+    >
+      <Medal tier={achievement.tier} earned size={30} />
+      <span className="flex-1 min-w-0">
+        <span className="block text-xs font-semibold text-accent-ink">업적 달성</span>
+        <span className="block text-base font-semibold text-ink truncate">
+          <Highlight text={achievement.title} terms={terms} />
+        </span>
+      </span>
+      <TierLabel tier={achievement.tier} />
+    </button>
+  )
 }
 
 export default function RecordHub() {
-  const { records, achievements, categories, deleteRecord } = useApp()
+  const { records, achievements, categories } = useApp()
+  const { openRecordEditor, openAchievement } = useUI()
+  const location = useLocation()
+  const navigate = useNavigate()
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
-  const [editingRecord, setEditingRecord] = useState(null)
-
-  const [filters, setFilters] = useState({
-    categories: [],
-    type: 'all',
-    search: '',
-  })
-
-  const [currentMonth, setCurrentMonth] = useState(() => todayStr().slice(0, 7))
-  const [jumpedDate, setJumpedDate] = useState(null)
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
-
-  const feedRef = useRef(null)
+  const [categoryId, setCategoryId] = useState(() => location.state?.categoryId ?? null)
+  const [type, setType] = useState('all')
+  const [search, setSearch] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [month, setMonth] = useState(() => todayStr().slice(0, 7))
+  const [highlighted, setHighlighted] = useState(null)
+  const [pageCount, setPageCount] = useState(1)
+  const [pendingJump, setPendingJump] = useState(null)
   const sentinelRef = useRef(null)
-  const headerObserverRef = useRef(null)
-  const jumpTimerRef = useRef(null)
+  const feedRef = useRef(null)
+  const highlightTimer = useRef(null)
 
-  // ── Build feed entries: records + achievement unlocks ──
-  const allEntries = useMemo(() => {
-    const entries = []
-    records.forEach(r => {
-      entries.push({ kind: 'record', date: r.date, record: r })
-      ;(r.unlockedAchievementIds || []).forEach(achId => {
-        const ach = achievements.find(a => a.id === achId)
-        if (ach) entries.push({ kind: 'achievement', date: r.date, achievement: ach })
-      })
-    })
-    return entries
-  }, [records, achievements])
-
-  // ── Filter entries (no date range — category, type, search only) ──
-  const searchTerms = useMemo(
-    () => filters.search.trim().toLowerCase().split(/\s+/).filter(Boolean),
-    [filters.search]
-  )
-
-  const filteredEntries = useMemo(() => {
-    return allEntries.filter(entry => {
-      if ((filters.categories || []).length > 0) {
-        if (entry.kind === 'record' && !filters.categories.includes(entry.record.categoryId)) return false
-        if (entry.kind === 'achievement' && !filters.categories.includes(entry.achievement.categoryId)) return false
-      }
-      if (filters.type === 'records' && entry.kind !== 'record') return false
-      if (filters.type === 'achievements' && entry.kind !== 'achievement') return false
-      if (searchTerms.length > 0 && entry.kind === 'record') {
-        const r = entry.record
-        const catPath = getCategoryPath(r.categoryId, categories).map(c => c.name).join(' ').toLowerCase()
-        const memo = (r.memo || '').toLowerCase()
-        const tags = (r.tags || []).join(' ').toLowerCase()
-        const combined = `${catPath} ${memo} ${tags}`
-        if (!searchTerms.every(t => combined.includes(t))) return false
-      }
-      return true
-    })
-  }, [allEntries, filters.categories, filters.type, searchTerms, categories])
-
-  // ── Group by date, newest first ──
-  const groupedEntries = useMemo(() => {
-    const groups = new Map()
-    filteredEntries.forEach(entry => {
-      if (!groups.has(entry.date)) groups.set(entry.date, [])
-      groups.get(entry.date).push(entry)
-    })
-    return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]))
-  }, [filteredEntries])
-
-  // ── Slice for infinite scroll ──
-  const visibleGroups = useMemo(
-    () => groupedEntries.slice(0, visibleCount),
-    [groupedEntries, visibleCount]
-  )
-  const allLoaded = visibleCount >= groupedEntries.length
-
-  // Reset visibleCount when filters change
-  useEffect(() => { setVisibleCount(BATCH_SIZE) }, [filters])
-
-  // ── Sentinel IntersectionObserver (load more) ──
+  // Clear router state so a refresh doesn't keep an old filter.
   useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !allLoaded) {
-          setVisibleCount(v => v + BATCH_SIZE)
-        }
-      },
-      { rootMargin: '200px' }
-    )
-    obs.observe(sentinel)
-    return () => obs.disconnect()
-  }, [allLoaded])
-
-  // ── Header IntersectionObserver (heatmap month sync) ──
-  useEffect(() => {
-    if (headerObserverRef.current) headerObserverRef.current.disconnect()
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        // Find the entry nearest the top of the viewport
-        const visible = entries.filter(e => e.isIntersecting)
-        if (visible.length === 0) return
-        visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        const topEntry = visible[0]
-        const dateStr = topEntry.target.dataset.date
-        if (dateStr) {
-          const month = dateStr.slice(0, 7)
-          setCurrentMonth(prev => prev !== month ? month : prev)
-        }
-      },
-      { rootMargin: '-10% 0px -70% 0px' }
-    )
-    headerObserverRef.current = obs
-
-    // Observe all rendered date headers
-    const headers = feedRef.current?.querySelectorAll('[data-date]')
-    headers?.forEach(el => obs.observe(el))
-
-    return () => obs.disconnect()
-  }, [visibleGroups])
-
-  // ── Scroll to date on heatmap click ──
-  const handleHeatmapDateClick = useCallback((dateStr) => {
-    if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current)
-    setJumpedDate(dateStr)
-    const el = document.getElementById(`date-${dateStr}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-    jumpTimerRef.current = setTimeout(() => setJumpedDate(null), JUMP_HIGHLIGHT_MS)
+    if (location.state?.categoryId) navigate('.', { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => () => { if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current) }, [])
+  const activeCategory = categoryId && categories.some(c => c.id === categoryId) ? categoryId : null
+  const scope = useMemo(() => (activeCategory ? getSubtreeIds(activeCategory, categories) : null), [activeCategory, categories])
+  const terms = useMemo(() => search.trim().toLowerCase().split(/\s+/).filter(Boolean), [search])
 
-  // ── Monthly stats ──
-  const monthStats = useMemo(() => computeMonthStats(records, currentMonth), [records, currentMonth])
+  const scopedRecords = useMemo(
+    () => (scope ? records.filter(r => scope.has(r.categoryId)) : records),
+    [records, scope],
+  )
+
+  const groups = useMemo(() => {
+    const matches = (text) => terms.every(t => text.toLowerCase().includes(t))
+    const byDate = new Map()
+    const push = (date, entry) => {
+      if (!byDate.has(date)) byDate.set(date, { records: [], unlocks: [] })
+      byDate.get(date)[entry.kind === 'record' ? 'records' : 'unlocks'].push(entry.item)
+    }
+
+    if (type !== 'achievements') {
+      for (const r of scopedRecords) {
+        if (terms.length > 0) {
+          const haystack = [
+            r.categoryId ? getCategoryPathLabel(r.categoryId, categories) : '미분류',
+            r.memo, (r.tags || []).join(' '), r.value != null ? `${r.value}${r.unit ?? ''}` : '',
+          ].join(' ')
+          if (!matches(haystack)) continue
+        }
+        push(r.date, { kind: 'record', item: r })
+      }
+    }
+    if (type !== 'records') {
+      for (const a of achievements) {
+        if (!a.isEarned) continue
+        if (scope && !scope.has(a.categoryId)) continue
+        if (terms.length > 0 && !matches(`${a.title} ${a.description}`)) continue
+        push(a.earnedAt, { kind: 'unlock', item: a })
+      }
+    }
+    return [...byDate.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
+  }, [scopedRecords, achievements, categories, scope, terms, type])
+
+  const visibleGroups = groups.slice(0, pageCount * GROUPS_PER_PAGE)
+  const hasMore = visibleGroups.length < groups.length
+  const totalShown = groups.reduce((n, [, g]) => n + g.records.length + g.unlocks.length, 0)
+
+  useEffect(() => { setPageCount(1) }, [activeCategory, type, search])
+
+  // Load more date groups as the end of the list comes into view.
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel || !hasMore) return undefined
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setPageCount(p => p + 1)
+    }, { rootMargin: '400px' })
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, visibleGroups.length])
+
+  // Follow the calendar month to whatever date is at the top of the feed.
+  useEffect(() => {
+    const headers = feedRef.current?.querySelectorAll('[data-date]')
+    if (!headers?.length) return undefined
+    const observer = new IntersectionObserver((entries) => {
+      const top = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
+      if (top) setMonth(top.target.dataset.date.slice(0, 7))
+    }, { rootMargin: '-64px 0px -70% 0px' })
+    headers.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [visibleGroups])
+
+  const jumpTo = useCallback((date) => {
+    const index = groups.findIndex(([d]) => d === date)
+    if (index < 0) return
+    setCalendarOpen(false)
+    if (index >= pageCount * GROUPS_PER_PAGE) setPageCount(Math.ceil((index + 1) / GROUPS_PER_PAGE))
+    setPendingJump(date)
+  }, [groups, pageCount])
+
+  useEffect(() => {
+    if (!pendingJump) return
+    const el = document.getElementById(`day-${pendingJump}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setHighlighted(pendingJump)
+    setPendingJump(null)
+    clearTimeout(highlightTimer.current)
+    highlightTimer.current = setTimeout(() => setHighlighted(null), JUMP_HIGHLIGHT_MS)
+  }, [pendingJump, visibleGroups])
+
+  useEffect(() => () => clearTimeout(highlightTimer.current), [])
+
+  const stats = useMemo(() => monthStats(scopedRecords, month), [scopedRecords, month])
+  const today = todayStr()
+  const yesterday = addDays(today, -1)
+  const filtersActive = !!activeCategory || type !== 'all' || terms.length > 0
+
+  const calendarPanel = (
+    <>
+      <ActivityCalendar
+        records={scopedRecords}
+        month={month}
+        onMonthChange={setMonth}
+        onDayClick={jumpTo}
+        highlightedDate={highlighted}
+      />
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+        {[['기록', `${stats.count}개`], ['기록한 날', `${stats.days}일`], ['최장 연속', `${stats.streak}일`]].map(([label, value]) => (
+          <div key={label} className="rounded-xl bg-sunken px-2 py-2.5">
+            <dt className="text-xs text-ink-2">{label}</dt>
+            <dd className="mt-0.5 text-md font-bold text-ink tabular">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </>
+  )
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 pt-5 md:pt-8 pb-28 md:pb-12 flex gap-8 items-start">
+      <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-[calc(3.5rem+2rem)]">
+        <div className="card p-4">{calendarPanel}</div>
+      </aside>
 
-      {/* ── Left: Sidebar ─────────────────────────────────── */}
-      <div
-        className={[
-          'flex-shrink-0 h-full border-r border-slate-200 bg-white scrollbar-thin',
-          'transition-[width] duration-300 overflow-hidden',
-          sidebarOpen ? 'w-72' : 'w-10',
-        ].join(' ')}
-      >
-        {/* Panel header — always visible */}
-        <div className="flex items-center justify-between px-3 pt-4 pb-2">
-          {sidebarOpen && (
-            <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">활동</h2>
-          )}
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            title={sidebarOpen ? '사이드바 접기' : '사이드바 펼치기'}
-            className={[
-              'flex items-center justify-center w-6 h-6 rounded-md text-slate-400',
-              'hover:bg-slate-100 hover:text-slate-600 transition-colors flex-shrink-0',
-              !sidebarOpen && 'mx-auto',
-            ].join(' ')}
-          >
-            {sidebarOpen ? '◀' : '▶'}
+      <div className="flex-1 min-w-0">
+        <header className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-ink">
+            기록 <span className="text-lg font-semibold text-ink-3 tabular">{formatNumber(records.length)}</span>
+          </h1>
+          <button type="button" className="hidden md:inline-flex btn btn-primary" onClick={() => openRecordEditor({ categoryId: activeCategory })}>
+            <PlusIcon size={18} strokeWidth={2.2} /> 기록하기
           </button>
-        </div>
+        </header>
 
-        {sidebarOpen && (
-          <div className="px-4 pb-4 space-y-4 overflow-y-auto h-[calc(100%-48px)] scrollbar-thin">
-            {/* Activity Heatmap */}
-            <ActivityHeatmap
-              records={records}
-              currentMonth={currentMonth}
-              onMonthChange={setCurrentMonth}
-              onDateClick={handleHeatmapDateClick}
-              jumpedDate={jumpedDate}
+        <div className="mt-4 space-y-2.5">
+          <div className="relative">
+            <SearchIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="메모, 태그, 카테고리로 찾기"
+              aria-label="기록 검색"
+              className="input h-11 pl-10"
             />
-
-            {/* Divider */}
-            <div className="border-t border-slate-200" />
-
-            {/* Monthly summary stats */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-700">
-                월간 요약
-              </h3>
-              <div className="flex flex-col gap-2">
-                {[
-                  { label: '총 기록', value: `${monthStats.total}건` },
-                  { label: '활동일', value: `${monthStats.activeDays}일` },
-                  { label: '최장 연속', value: <span style={{ color: '#378ADD' }}>{monthStats.longestStreak}일</span> },
-                  { label: '이번 주', value: `${monthStats.thisWeek}건` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="bg-slate-50 rounded-xl px-4 py-3 flex items-center justify-between">
-                    <div className="text-xs text-slate-500">{label}</div>
-                    <div className="text-xl font-medium text-slate-800">{value}</div>
-                  </div>
-                ))}
-              </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setPickerOpen(true)} className={`chip ${activeCategory ? 'chip-active' : ''}`}>
+              <FolderIcon size={15} />
+              <span className="max-w-[180px] truncate">
+                {activeCategory ? categories.find(c => c.id === activeCategory)?.name : '모든 카테고리'}
+              </span>
+              <ChevronDownIcon size={14} />
+            </button>
+            <div className="flex items-center rounded-full bg-sunken p-0.5" role="group" aria-label="보기">
+              {TYPE_FILTERS.map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setType(f.id)}
+                  aria-pressed={type === f.id}
+                  className={`h-7 px-3 rounded-full text-sm font-medium transition-colors ${type === f.id ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink'}`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
-
-            {/* Quick jump */}
-            {monthStats.topDates.length > 0 && (
-              <div className="space-y-1.5">
-                <h3 className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                  빠른 이동
-                </h3>
-                <div className="space-y-1">
-                  {monthStats.topDates.map(({ date, count }) => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => handleHeatmapDateClick(date)}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-50 transition-colors text-left group"
-                    >
-                      <span className="text-[10px] text-slate-600">{formatDate(date)}</span>
-                      <span className="flex items-center gap-1 text-[9px] text-slate-400 group-hover:text-primary transition-colors">
-                        {count}건 ↓
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <button type="button" onClick={() => setCalendarOpen(v => !v)} className={`lg:hidden chip ${calendarOpen ? 'chip-active' : ''}`} aria-expanded={calendarOpen}>
+              <CalendarIcon size={15} /> 달력
+            </button>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={() => { setCategoryId(null); setType('all'); setSearch('') }}
+                className="text-sm font-medium text-ink-2 hover:text-ink px-1"
+              >
+                필터 지우기
+              </button>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* ── Right: Feed ──────────────────────────────────────────── */}
-      <div ref={feedRef} className="flex-1 min-w-0 h-full overflow-y-auto bg-[#F8FAFC] scrollbar-thin">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
+        {calendarOpen && <div className="lg:hidden mt-3 card p-4 animate-fade-in">{calendarPanel}</div>}
 
-          {/* Page header */}
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-type-page font-medium text-slate-900 whitespace-nowrap">
-              기록 허브
-              <span className="ml-2 text-sm font-normal text-slate-400">
-                · 전체 {filteredEntries.length}건
-              </span>
-            </h1>
-            {/* Search input */}
-            <div className="relative flex-shrink-0 w-48">
-              <input
-                type="search"
-                value={filters.search}
-                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-                placeholder="메모, 태그, 카테고리 검색"
-                className="w-full pl-7 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary bg-white"
-              />
-              <svg
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </div>
-          </div>
-
-          {/* Filter bar */}
-          <FilterBar filters={filters} onChange={setFilters} />
-
-          {/* Feed groups */}
-          {visibleGroups.length > 0 ? (
-            <>
-              {visibleGroups.map(([date, entries]) => {
-                const isJumped = jumpedDate === date
-                return (
-                  <div
-                    key={date}
-                    id={`date-${date}`}
-                    data-date={date}
-                  >
-                    {/* Date group header */}
-                    <div
-                      className="flex items-center gap-3 mb-2 sticky top-0 py-1 z-10 transition-colors"
-                      style={{
-                        background: '#F8FAFC',
-                        borderLeft: isJumped ? '2px solid #D85A30' : '2px solid transparent',
-                        paddingLeft: isJumped ? 6 : 8,
-                      }}
-                    >
-                      <h3
-                        className="whitespace-nowrap transition-colors"
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 500,
-                          color: isJumped ? '#D85A30' : '#94a3b8',
-                        }}
-                      >
-                        {formatDate(date)}
-                      </h3>
-                      <div className="flex-1 border-t border-slate-200" />
-                      <span className="text-[9px] text-slate-400 whitespace-nowrap">
-                        {entries.length}건
-                      </span>
-                    </div>
-
-                    {/* Entries */}
-                    <div className="space-y-1.5 pl-1">
-                      {entries.map((entry, i) =>
-                        entry.kind === 'record'
-                          ? (
-                            <RecordCard
-                              key={`r-${entry.record.id}-${i}`}
-                              record={entry.record}
-                              onEdit={setEditingRecord}
-                              highlightTerms={searchTerms.length > 0 ? searchTerms : undefined}
-                            />
-                          )
-                          : <UnlockLogCard key={`a-${entry.achievement.id}-${i}`} achievement={entry.achievement} />
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* Sentinel + status */}
-              <div ref={sentinelRef} className="h-4" />
-              {allLoaded ? (
-                <p className="text-center text-xs text-slate-400 py-4">모두 불러왔습니다</p>
+        <div ref={feedRef} className="mt-6">
+          {groups.length === 0 ? (
+            <div className="card">
+              {records.length === 0 ? (
+                <EmptyState
+                  icon={<NotebookIcon size={22} />}
+                  title="아직 기록이 없어요"
+                  body="오늘 한 일을 하나 남겨 보세요. 기록이 쌓이면 여기에 날짜별로 모여요."
+                  action={<button type="button" className="btn btn-sm btn-primary" onClick={() => openRecordEditor({})}>첫 기록 남기기</button>}
+                />
               ) : (
-                <div className="flex justify-center py-4">
-                  <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                </div>
+                <EmptyState
+                  icon={<SearchIcon size={22} />}
+                  title="조건에 맞는 기록이 없어요"
+                  body="검색어나 필터를 바꿔 보세요."
+                  action={
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => { setCategoryId(null); setType('all'); setSearch('') }}>
+                      <XIcon size={16} /> 필터 지우기
+                    </button>
+                  }
+                />
+              )}
+            </div>
+          ) : (
+            <>
+              {filtersActive && <p className="mb-3 text-sm text-ink-2">{formatNumber(totalShown)}개 찾았어요</p>}
+              <div className="space-y-6">
+                {visibleGroups.map(([date, group]) => (
+                  <section key={date} id={`day-${date}`} data-date={date} className="scroll-mt-20" aria-label={formatDateWithWeekday(date)}>
+                    <h2
+                      className={[
+                        'sticky top-14 z-10 -mx-1 px-1 py-2 bg-paper/95 backdrop-blur flex items-center gap-2 text-sm font-semibold transition-colors',
+                        highlighted === date ? 'text-warn' : 'text-ink-2',
+                      ].join(' ')}
+                    >
+                      {formatDateWithWeekday(date)}
+                      {(date === today || date === yesterday) && (
+                        <span className="tag h-5">{date === today ? '오늘' : '어제'}</span>
+                      )}
+                      <span className="ml-auto text-xs font-normal text-ink-3">
+                        {group.records.length > 0 && `기록 ${group.records.length}`}
+                        {group.records.length > 0 && group.unlocks.length > 0 && ' · '}
+                        {group.unlocks.length > 0 && `업적 ${group.unlocks.length}`}
+                      </span>
+                    </h2>
+                    <div className="mt-1 space-y-2">
+                      {group.records.map(r => (
+                        <RecordCard key={r.id} record={r} relativeTo={activeCategory} highlightTerms={terms} />
+                      ))}
+                      {group.unlocks.map(a => (
+                        <UnlockRow key={a.id} achievement={a} terms={terms} onOpen={() => openAchievement(a.id)} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+              <div ref={sentinelRef} className="h-8" />
+              {!hasMore && groups.length > 3 && (
+                <p className="py-4 text-center text-sm text-ink-3">여기까지가 모든 기록이에요.</p>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <span className="text-5xl mb-4">📭</span>
-              <p className="text-lg font-medium">항목이 없습니다</p>
-              <p className="text-sm mt-1">필터를 조정해 보세요</p>
-            </div>
           )}
         </div>
       </div>
 
-      {/* Edit record modal */}
-      {editingRecord && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditingRecord(null) }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <RecordEditor
-              selectedCategoryId={editingRecord.categoryId}
-              initialRecord={editingRecord}
-              onClose={() => setEditingRecord(null)}
-              onDelete={async (id) => { await deleteRecord(id); setEditingRecord(null) }}
-            />
-          </div>
-        </div>
-      )}
+      <RecordFab categoryId={activeCategory} />
+
+      <Modal open={pickerOpen} title="카테고리로 보기" size="sm" onClose={() => setPickerOpen(false)} bodyClassName="p-0">
+        <CategoryList
+          value={activeCategory}
+          onChange={(id) => { setCategoryId(id); setPickerOpen(false) }}
+          allowNone
+          noneLabel="모든 카테고리"
+          maxHeight={420}
+        />
+      </Modal>
     </div>
   )
 }

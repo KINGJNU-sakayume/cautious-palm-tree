@@ -1,88 +1,83 @@
 /** @type {import('tailwindcss').Config} */
+
+// Colours are CSS variables (see src/index.css) so light and dark themes share
+// one set of class names.
+const token = name => `rgb(var(--c-${name}) / <alpha-value>)`
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: [
+          '"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui',
+          'Roboto', '"Helvetica Neue"', '"Segoe UI"', '"Apple SD Gothic Neo"', '"Noto Sans KR"',
+          '"Malgun Gothic"', 'sans-serif',
+        ],
       },
       colors: {
-        neutral: {
-          DEFAULT: '#F8FAFC',
-          50: '#F8FAFC',
+        paper: token('paper'),
+        surface: token('surface'),
+        sunken: token('sunken'),
+        line: { DEFAULT: token('line'), strong: token('line-strong') },
+        ink: { DEFAULT: token('ink'), 2: token('ink-2'), 3: token('ink-3') },
+        accent: {
+          DEFAULT: token('accent'),
+          strong: token('accent-strong'),
+          soft: token('accent-soft'),
+          ink: token('accent-ink'),
+          on: token('on-accent'),
         },
-        primary: {
-          DEFAULT: '#0066FF',
-          light: '#3385ff',
-          dark: '#0052cc',
-        },
-        secondary: {
-          DEFAULT: '#5B75BA',
-        },
-        tertiary: {
-          DEFAULT: '#CC4204',
-        },
-        tier: {
-          bronze: '#cd7f32',
-          silver: '#9ca3af',
-          gold: '#f59e0b',
-          platinum: '#6366f1',
-          diamond: '#06b6d4',
-          'red-diamond': '#CC4204',
-        },
+        danger: { DEFAULT: token('danger'), soft: token('danger-soft') },
+        warn: { DEFAULT: token('warn'), soft: token('warn-soft') },
+      },
+      letterSpacing: {
+        tight: '-0.02em',
+      },
+      boxShadow: {
+        card: '0 1px 2px rgb(0 0 0 / 0.04)',
+        pop: '0 8px 28px -6px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.06)',
       },
       keyframes: {
-        shimmer: {
-          '0%': { backgroundPosition: '-200% center' },
-          '100%': { backgroundPosition: '200% center' },
+        'toast-in': {
+          '0%': { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
-        'glow-gold': {
-          '0%, 100%': { boxShadow: '0 0 4px 1px rgba(245,158,11,0.4)' },
-          '50%': { boxShadow: '0 0 10px 3px rgba(245,158,11,0.7)' },
-        },
-        'glow-diamond': {
-          '0%, 100%': { boxShadow: '0 0 6px 2px rgba(6,182,212,0.5)' },
-          '50%': { boxShadow: '0 0 14px 5px rgba(6,182,212,0.8)' },
-        },
-        'glow-red-diamond': {
-          '0%, 100%': { boxShadow: '0 0 6px 2px rgba(204,66,4,0.5)' },
-          '50%': { boxShadow: '0 0 16px 6px rgba(204,66,4,0.9)' },
-        },
-        'slide-in-right': {
-          '0%': { transform: 'translateX(110%)', opacity: '0' },
-          '100%': { transform: 'translateX(0)', opacity: '1' },
-        },
-        'slide-out-right': {
-          '0%': { transform: 'translateX(0)', opacity: '1' },
-          '100%': { transform: 'translateX(110%)', opacity: '0' },
+        'toast-out': {
+          '0%': { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateY(6px)' },
         },
         'fade-in': {
-          '0%': { opacity: '0', transform: 'translateY(4px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'sheet-in': {
+          '0%': { transform: 'translateY(24px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'drawer-in': {
+          '0%': { transform: 'translateX(24px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
         },
       },
       animation: {
-        shimmer: 'shimmer 2.5s linear infinite',
-        'glow-gold': 'glow-gold 2s ease-in-out infinite',
-        'glow-diamond': 'glow-diamond 2s ease-in-out infinite',
-        'glow-red-diamond': 'glow-red-diamond 1.5s ease-in-out infinite',
-        'slide-in-right': 'slide-in-right 0.3s ease-out forwards',
-        'slide-out-right': 'slide-out-right 0.25s ease-in forwards',
-        'fade-in': 'fade-in 0.2s ease-out forwards',
+        'toast-in': 'toast-in 0.22s ease-out',
+        'toast-out': 'toast-out 0.18s ease-in forwards',
+        'fade-in': 'fade-in 0.15s ease-out',
+        'sheet-in': 'sheet-in 0.22s ease-out',
+        'drawer-in': 'drawer-in 0.22s ease-out',
       },
-      fontSize: {
-        'type-page':      'var(--type-page)',
-        'type-section':   'var(--type-section)',
-        'type-card':      'var(--type-card)',
-        'type-body':      'var(--type-body)',
-        'type-secondary': 'var(--type-secondary)',
-        'type-badge':     'var(--type-badge)',
-      },
-      boxShadow: {
-        card: '0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06)',
-        'card-hover': '0 4px 12px 0 rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.08)',
-        panel: '0 2px 8px 0 rgba(0,0,0,0.08)',
-      },
+    },
+    // Replaces the default scale: fewer, clearer steps sized for Korean text.
+    fontSize: {
+      xs: ['12px', '16px'],
+      sm: ['13px', '18px'],
+      base: ['15px', '22px'],
+      md: ['16px', '24px'],
+      lg: ['18px', '26px'],
+      xl: ['20px', '28px'],
+      '2xl': ['24px', '32px'],
+      '3xl': ['30px', '38px'],
     },
   },
   plugins: [],
